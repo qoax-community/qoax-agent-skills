@@ -1,0 +1,44 @@
+name: Check agent skills
+description: Check the vendored agent skills in .agents/skills against skills-lock.json. The default check runs offline and needs no token.
+inputs:
+  source:
+    description: Check only lock entries from this source. The check fails when no lock entry has this source. Set it to an empty string to check every entry.
+    default: qoax-community/qoax-agent-skills
+  allow:
+    description: Space-separated folders in .agents/skills that have no lock entry on purpose.
+    default: ""
+  claude-links:
+    description: Also check that .claude/skills/<name> links to ../../.agents/skills/<name>.
+    default: "true"
+  upstream:
+    description: Compare the lock with the main branch of the source repository instead. Needs github.com.
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Check agent skills against skills-lock.json
+      shell: bash
+      env:
+        SOURCE: ${{ inputs.source }}
+        ALLOW: ${{ inputs.allow }}
+        CLAUDE_LINKS: ${{ inputs.claude-links }}
+        UPSTREAM: ${{ inputs.upstream }}
+      run: |
+        args=()
+        [ -n "$SOURCE" ] && args+=(--source "$SOURCE")
+        for name in $ALLOW; do args+=(--allow "$name"); done
+        [ "$CLAUDE_LINKS" = "true" ] || args+=(--no-claude-links)
+        if [ "$UPSTREAM" = "true" ]; then
+          if [ -z "$SOURCE" ]; then
+            echo "::error::The upstream check needs a source repository."
+            exit 1
+          fi
+          dir="$RUNNER_TEMP/agent-skills-upstream"
+          rm -rf "$dir"
+          if ! GIT_TERMINAL_PROMPT=0 git clone -q --depth 1 "https://github.com/$SOURCE.git" "$dir"; then
+            echo "::error::Cannot clone https://github.com/$SOURCE.git. Set the source input to the source that skills-lock.json records."
+            exit 1
+          fi
+          args+=(--upstream "$dir")
+        fi
+        node "$GITHUB_ACTION_PATH/scripts/check-skills-lock.mjs" --root "$GITHUB_WORKSPACE" "${args[@]}"
