@@ -1,0 +1,17 @@
+{
+  "name": "qoax",
+  "owner": { "name": "Qoax Community", "url": "https://github.com/qoax-community" },
+  "description": "Shared agent skills for Qoax repositories.",
+  "plugins": [
+    {
+      "name": "asd-ste100",
+      "source": "./plugins/asd-ste100",
+      "description": "ASD-STE100 Simplified Technical English for docs, issues, pull requests, commit messages and replies."
+    },
+    {
+      "name": "qoax-agent-skills",
+      "source": "./plugins/qoax-agent-skills",
+      "description": "Qoax organisation templates, plan questioning and code comment rules."
+    }
+  ]
+}

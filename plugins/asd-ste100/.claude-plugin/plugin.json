@@ -1,0 +1,8 @@
+{
+  "name": "asd-ste100",
+  "description": "ASD-STE100 Simplified Technical English: short, plain technical writing for docs, issues, pull requests, commit messages and replies.",
+  "author": { "name": "Ege Chelebi (upstream skill), packaged by Qoax Community" },
+  "homepage": "https://github.com/woosal1337/blog/tree/main/videos/ep01-the-cure-for-ai-slop/asd-ste100",
+  "repository": "https://github.com/qoax-community/qoax-agent-skills",
+  "license": "MIT"
+}
