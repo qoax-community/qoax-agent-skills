@@ -44,10 +44,14 @@ const git = (cwd, ...args) =>
   execFileSync("git", args, { cwd, encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 
 // Fetch one commit without blobs, then check out only the paths we need.
+// The checkout keeps the line endings that git stores, as on Linux, also on a
+// computer with core.autocrlf=true.
 function fetchAt(src, ref, paths) {
   const dir = mkdtempSync(join(tmpdir(), "qoax-upstream-"));
   try {
     git(dir, "init", "-q");
+    git(dir, "config", "core.autocrlf", "false");
+    git(dir, "config", "core.eol", "lf");
     git(dir, "remote", "add", "origin", `${base}${src.repo}.git`);
     git(dir, "fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", ref);
     git(dir, "sparse-checkout", "set", "--no-cone", ...paths);

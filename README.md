@@ -58,10 +58,19 @@ in front of each skills CLI command, also in scripts and in `AGENTS.md`.
 
 Then:
 
-1. Commit `.agents/skills`, `.claude/skills` and `skills-lock.json`. Do not
-   edit the files in `.agents/skills`. Change the skill in this repository.
-2. Copy `templates/agent-skills.yml` to `.github/workflows/`.
-3. Pin the action to the commit of a release tag. Get the commit in a clone of
+1. Add this line to `.gitattributes`, below any `* text` line. The file
+   `templates/gitattributes` has the line with a comment. The "Line endings"
+   section below tells why.
+
+   ```gitattributes
+   /.agents/skills/** -text
+   ```
+
+2. Commit `.gitattributes`, `.agents/skills`, `.claude/skills` and
+   `skills-lock.json`. Do not edit the files in `.agents/skills`. Change the
+   skill in this repository.
+3. Copy `templates/agent-skills.yml` to `.github/workflows/`.
+4. Pin the action to the commit of a release tag. Get the commit in a clone of
    this repository:
 
    ```sh
@@ -70,7 +79,7 @@ Then:
 
    Then write `uses: qoax-community/qoax-agent-skills@<commit> # vX.Y.Z` in
    both jobs.
-4. In `AGENTS.md`, tell Windows users to clone with symbolic links. The
+5. In `AGENTS.md`, tell Windows users to clone with symbolic links. The
    "Symbolic links" section below gives the steps.
 
 Commit the skills from this repository, also in a repository that does not
@@ -121,6 +130,27 @@ clone. To check a clone, run this command in a clone of this repository:
 
 ```sh
 node scripts/check-skills-lock.mjs --root PATH --source qoax-community/qoax-agent-skills
+```
+
+### Line endings
+
+Git for Windows sets `core.autocrlf` to `true` by default. Git then writes
+text files with CRLF line endings. The skills CLI and the lock check take the
+hash of the bytes in each skill file. With CRLF, the lock check fails with a
+hash error, and `update` writes hashes that the CI check does not accept.
+
+The `-text` attribute stops this change. A consumer repository sets it on
+`.agents/skills` in step 1 of "Add the skills". This repository sets it on
+`plugins/` and `upstream/`. The skills CLI clones this repository, so its
+copies also keep LF line endings. The shell scripts of this repository also
+keep LF, because `sh` stops at a CRLF line ending.
+
+To repair a clone that has CRLF line endings in the skills, get the commit
+with the `.gitattributes` line. Then run these commands in its root:
+
+```sh
+rm -r .agents/skills
+git checkout -- .agents/skills
 ```
 
 ## Update a repository

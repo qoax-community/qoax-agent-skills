@@ -1,0 +1,9 @@
+# The skills CLI and scripts/check-skills-lock.mjs hash each skill file byte
+# for byte, and sync-upstream.mjs compares and patches the files byte for byte.
+# Git must not change their line endings, also with core.autocrlf=true.
+/plugins/** -text
+/upstream/** -text
+
+# sh stops at a CRLF line ending, so the shell scripts keep LF.
+*.sh text eol=lf
+/.githooks/commit-msg text eol=lf
