@@ -14,7 +14,9 @@
       "scripts/ste-lint.py"
     ],
     "licence": "LICENSE",
-    "patches": []
+    "patches": [
+      "0001-keep-repository-spelling.patch"
+    ]
   },
   "grill-me": {
     "plugin": "qoax-agent-skills",
