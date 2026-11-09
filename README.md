@@ -70,6 +70,8 @@ Then:
 
    Then write `uses: qoax-community/qoax-agent-skills@<commit> # vX.Y.Z` in
    both jobs.
+4. In `AGENTS.md`, tell Windows users to clone with symbolic links. The
+   "Symbolic links" section below gives the steps.
 
 Commit the skills from this repository, also in a repository that does not
 commit its other skills. A new clone, a Claude Code worktree or a cloud
@@ -91,6 +93,35 @@ and needs no `allow` input. A restore step with `experimental_install` also
 installs the committed skills again. When the main branch of this repository
 has a newer skill, git then shows changes in `.agents/skills` and
 `skills-lock.json`. Commit them as an update, or discard them.
+
+### Symbolic links
+
+Each `.claude/skills/<name>` is a symbolic link. Git makes the links only when
+`core.symlinks` is `true`. Git for Windows sets it to `false` by default.
+Then each link is a small text file, and Claude Code loads none of the skills.
+The lock check in CI does not find this problem, because CI runs on Linux.
+
+On Windows, turn on Developer Mode. Then clone with:
+
+```sh
+git clone -c core.symlinks=true URL
+```
+
+To repair a clone that has text files in place of the links, run these
+commands in its root:
+
+```sh
+git config core.symlinks true
+rm -r .claude/skills
+git checkout -- .claude/skills
+```
+
+A zip download of the repository has the same problem on Windows, so use a
+clone. To check a clone, run this command in a clone of this repository:
+
+```sh
+node scripts/check-skills-lock.mjs --root PATH --source qoax-community/qoax-agent-skills
+```
 
 ## Update a repository
 
