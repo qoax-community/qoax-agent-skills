@@ -112,20 +112,26 @@ when the main branch of this repository has a newer skill than the lock.
 - Before a pull request, run `node scripts/check-repo.mjs` and
   `sh scripts/self-test.sh`. The self-test installs every skill with the
   skills CLI and compares the hashes.
+- After the merge, make a release and upload the new zip files to claude.ai.
+  Without a release, claude.ai keeps the old skill.
 
 ## Releases
 
-A release is an annotated tag `vX.Y.Z` on `main`:
+A release is an annotated tag `vX.Y.Z` on `main`. Make a release after each
+merge that changes `plugins/`, `action.yml` or
+`scripts/check-skills-lock.mjs`:
 
 ```sh
 git tag -a vX.Y.Z -m vX.Y.Z
 git push origin vX.Y.Z
 ```
 
+The release workflow then builds a zip file for each plugin and attaches it
+to the GitHub release. Upload the zip files to claude.ai. The "claude.ai"
+section below gives the steps.
+
 Consumers pin the action by the commit of the tag, not by the tag name. Do not
-move or delete a tag after you push it. Make a release when `action.yml` or
-`scripts/check-skills-lock.mjs` changes. The skills CLI does not read the
-tags.
+move or delete a tag after you push it. The skills CLI does not read the tags.
 
 ## Claude Code
 
@@ -141,19 +147,51 @@ claude plugin install qoax-agent-skills@qoax
 The plugin manifests have no `version`. Claude Code then uses the commit as
 the version, and each change gets to the users.
 
+Do not use the plugins in a repository that has the skills in
+`.claude/skills`. There, Claude Code loads two copies of each skill: the
+copy in the repository and the plugin copy, for example
+`asd-ste100:asd-ste100`. The plugin copy comes from the main branch, so it can
+be different from the copy that `skills-lock.json` pins. To use only the copy
+in the repository, disable the plugins in its `.claude/settings.json`:
+
+```json
+{
+  "enabledPlugins": {
+    "asd-ste100@qoax": false,
+    "qoax-agent-skills@qoax": false
+  }
+}
+```
+
 ## claude.ai
 
 claude.ai organisation sync accepts only a private marketplace repository.
-This repository is public, so organisation sync is not set up. Instead, build
-a zip file for each plugin from a release tag:
+This repository is public, so organisation sync is not set up. Instead, an
+Owner of the claude.ai organisation uploads a zip file for each plugin after
+each release:
 
-```sh
-git archive --format=zip -o asd-ste100.zip vX.Y.Z:plugins/asd-ste100
-git archive --format=zip -o qoax-agent-skills.zip vX.Y.Z:plugins/qoax-agent-skills
-```
+1. Get `asd-ste100.zip` and `qoax-agent-skills.zip` from the GitHub release.
+   If the release has no zip files, run the release workflow by hand with
+   the tag. Or build them in a clone of this repository:
 
-An Owner of the claude.ai organisation uploads the two zip files in the
-organisation settings. Then the Owner removes the old uploads.
+   ```sh
+   sh scripts/build-zips.sh vX.Y.Z
+   ```
+
+   The script writes the zip files to `dist/`.
+2. In the organisation settings, remove the old uploads of the two plugins.
+3. Upload the two new zip files.
+
+Remove the old uploads first. The uploads before v1.0.0 came from other
+repositories. Their versions are 2.0.5 (`asd-ste100`) and 1.0.0
+(`qoax-agent-skills`). The new zip files have version 1.0.0. That is not
+higher than the old versions. When the old uploads are gone, the organisation
+has one copy of each plugin, with the release version.
+
+Each zip file has the release version in its `plugin.json`. Compare it with
+the latest release to see if claude.ai has the current skills. The
+`plugin.json` files in this repository have no version, so the version is
+only in the zip files.
 
 ## Commit messages
 
