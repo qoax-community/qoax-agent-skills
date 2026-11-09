@@ -71,12 +71,26 @@ Then:
    Then write `uses: qoax-community/qoax-agent-skills@<commit> # vX.Y.Z` in
    both jobs.
 
-Some repositories do not commit `.agents`. After a clone, they restore the
-skills from `skills-lock.json`:
+Commit the skills from this repository, also in a repository that does not
+commit its other skills. A new clone, a Claude Code worktree or a cloud
+session does not run a restore step. Claude Code then skips each link to a
+missing folder and shows no message. Also, `experimental_install` takes each
+skill from the main branch of its source, not the version in the lock.
 
-```sh
-DISABLE_TELEMETRY=1 npx skills@1.7.3 experimental_install
+To ignore only the other skills, put these lines in `.gitignore`. Add one `!`
+line for each skill from this repository:
+
+```gitignore
+/.agents/skills/*
+!/.agents/skills/asd-ste100/
+!/.agents/skills/grill-me/
 ```
+
+The other skills have lock entries, so the lock check accepts their folders
+and needs no `allow` input. A restore step with `experimental_install` also
+installs the committed skills again. When the main branch of this repository
+has a newer skill, git then shows changes in `.agents/skills` and
+`skills-lock.json`. Commit them as an update, or discard them.
 
 ## Update a repository
 
