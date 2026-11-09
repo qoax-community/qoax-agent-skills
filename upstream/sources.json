@@ -1,0 +1,57 @@
+{
+  "asd-ste100": {
+    "plugin": "asd-ste100",
+    "repo": "woosal1337/blog",
+    "path": "videos/ep01-the-cure-for-ai-slop/asd-ste100",
+    "commit": "79c028883aa8dc616f027558fed2e4682215bf23",
+    "tree": "0c82d18b44bd1f04608bf2b7705529b72a1f77c7",
+    "files": [
+      "SKILL.md",
+      "LICENSE",
+      "agents/openai.yaml",
+      "hooks/run-python.cjs",
+      "references/ste-recurring-errors.md",
+      "scripts/ste-lint.py"
+    ],
+    "licence": "LICENSE",
+    "patches": []
+  },
+  "grill-me": {
+    "plugin": "qoax-agent-skills",
+    "repo": "mattpocock/skills",
+    "path": "skills/productivity/grill-me",
+    "commit": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+    "tree": "3df14e2d3a89459bf300614be9247e3ce74798f8",
+    "files": [
+      "SKILL.md",
+      "agents/openai.yaml"
+    ],
+    "licence": "/LICENSE",
+    "patches": []
+  },
+  "grilling": {
+    "plugin": "qoax-agent-skills",
+    "repo": "mattpocock/skills",
+    "path": "skills/productivity/grilling",
+    "commit": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+    "tree": "f551b6e0d219fdda0b6abf277f8f915b3127d1e9",
+    "files": [
+      "SKILL.md",
+      "agents/openai.yaml"
+    ],
+    "licence": "/LICENSE",
+    "patches": []
+  },
+  "writing-code-comments": {
+    "plugin": "qoax-agent-skills",
+    "repo": "posthog/posthog",
+    "path": ".agents/skills/writing-code-comments",
+    "commit": "f18803ea84d9cda95987e57b5ddfc42bf27f3c44",
+    "tree": "46363e425c2cfef19b5d85d4fc2cbc55b3bf6cc7",
+    "files": [
+      "SKILL.md"
+    ],
+    "licence": "/LICENSE",
+    "patches": []
+  }
+}
