@@ -1,17 +1,13 @@
-# The hook submodule and the actions are pinned by commit, so nothing updates
-# on its own. Let Dependabot open the bumps.
+# Each action has a commit pin, so nothing updates on its own. Let Dependabot
+# open the bumps. One of them is the qoax-githooks pin. When a release changes
+# the hook, the check of that bump fails. Then the same pull request must sync
+# the copy at .githooks/commit-msg.
 version: 2
 updates:
-  - package-ecosystem: gitsubmodule
-    directory: /
-    schedule:
-      interval: weekly
-    commit-message:
-      # Conventional Commits, because the hook checks Dependabot too.
-      prefix: chore
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
     commit-message:
+      # Conventional Commits, because the hook checks Dependabot too.
       prefix: ci
