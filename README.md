@@ -272,11 +272,16 @@ only in the zip files.
 
 The `commit-msg` hook from
 [qoax-githooks](https://github.com/qoax-community/qoax-githooks) checks each
-commit message. Run this command once after a clone:
+commit message. `.githooks/commit-msg` is a tracked copy of that hook. Run
+this command once after a clone:
 
 ```sh
 sh scripts/setup-hooks.sh
 ```
 
-It checks out the `.githooks/shared` submodule and sets `core.hooksPath`. The
-commit-conventions workflow runs the same check on each pull request.
+It sets `core.hooksPath` to `.githooks`. The commit-conventions workflow pins
+a release of qoax-githooks by commit. On each pull request, it runs the same
+check and compares the copy with the hook of that release. When a Dependabot
+bump changes the hook, the bump pull request must also sync the copy. The
+[qoax-githooks README](https://github.com/qoax-community/qoax-githooks#readme)
+gives the details.
