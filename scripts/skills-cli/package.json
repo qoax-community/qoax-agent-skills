@@ -1,0 +1,11 @@
+{
+  "name": "qoax-skills-cli",
+  "private": true,
+  "description": "The pinned skills CLI for update-skills.sh. npm ci installs it from package-lock.json.",
+  "dependencies": {
+    "skills": "1.7.3"
+  },
+  "overrides": {
+    "tar": "7.5.22"
+  }
+}

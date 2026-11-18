@@ -4,9 +4,15 @@
 #
 # - Only the lock entries of the source change. The script names them, so the
 #   update leaves the skills of other sources as they are.
+# - The skills CLI comes from scripts/skills-cli/package-lock.json, with
+#   `npm ci --ignore-scripts` in a folder outside the repository. npx in the
+#   repository would read an .npmrc from it, and a person with write access
+#   could point the registry at another package.
 # - The skills CLI runs with a scratch home that has only .claude. Then it
 #   writes .agents/skills and the .claude/skills links, and no folders for
 #   other agents. It also gets no GitHub token from the environment.
+# - The skills CLI must not change .git/config or the hooks, because later
+#   git commands run them.
 # - After the update, only these paths may change: .agents/skills/<name>,
 #   .claude/skills/<name> and skills-lock.json. The lock check must pass.
 #
@@ -20,7 +26,6 @@ here=$(cd "$(dirname "$0")/.." && pwd)
 root=.
 source=qoax-community/qoax-agent-skills
 bump_pin=false
-skills_cli=skills@1.7.3
 while [ $# -gt 0 ]; do
   case $1 in
     --root) root=$2; shift 2 ;;
@@ -57,15 +62,30 @@ done
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work/home/.claude"
-cache=${npm_config_cache:-$(npm config get cache)}
+
+lock="$here/scripts/skills-cli/package-lock.json"
+key=$(cksum <"$lock" | cut -d' ' -f1)
+cli_dir=${SKILLS_CLI_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/qoax-agent-skills/skills-cli-$key}
+cli="$cli_dir/node_modules/skills/bin/cli.mjs"
+if [ ! -f "$cli" ] || ! cmp -s "$lock" "$cli_dir/package-lock.json"; then
+  mkdir -p "$cli_dir"
+  cp "$here/scripts/skills-cli/package.json" "$lock" "$cli_dir/"
+  (cd "$cli_dir" && npm ci --ignore-scripts --no-audit --no-fund --loglevel=error) >&2 ||
+    die "cannot install the skills CLI from $lock"
+fi
+
+git_dir=$(git rev-parse --git-common-dir)
+state() { cat "$git_dir/config"; ls -la "$(git rev-parse --git-path hooks)" 2>/dev/null; }
+before=$(state | cksum)
 echo "Updating from $source:" $names
 # shellcheck disable=SC2086
 env -u GITHUB_TOKEN -u GH_TOKEN -u XDG_CONFIG_HOME -u CODEX_HOME -u CLAUDE_CONFIG_DIR \
-  HOME="$work/home" npm_config_cache="$cache" DISABLE_TELEMETRY=1 \
-  npx --yes "$skills_cli" update -p -y $names >"$work/update.log" 2>&1 || {
+  -u GIT_CONFIG_COUNT -u GIT_CONFIG_PARAMETERS HOME="$work/home" DISABLE_TELEMETRY=1 \
+  node "$cli" update -p -y $names >"$work/update.log" 2>&1 || {
   cat "$work/update.log" >&2
   die "the skills CLI failed"
 }
+[ "$(state | cksum)" = "$before" ] || die "the skills CLI changed .git/config or the git hooks"
 grep -E 'Updated|up to date|Failed|✗' "$work/update.log" || true
 
 if [ "$bump_pin" = true ]; then
