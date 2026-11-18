@@ -262,10 +262,12 @@ sh scripts/update-skills.sh --root PATH --bump-pin
 ```
 
 The script updates only the skills from this repository, also in a
-repository that has skills from other sources. It runs the skills CLI with a
-scratch home directory, so the computer needs no `~/.claude` directory. Then
-it makes sure that only the skills, their links, `skills-lock.json` and the
-pin changed, and runs the lock check. Commit the changes.
+repository that has skills from other sources. It installs the skills CLI from
+`scripts/skills-cli/package-lock.json` into a cache folder, so an `.npmrc` in
+the consumer cannot change the package. It runs the CLI with a scratch home
+directory, so the computer needs no `~/.claude` directory. Then it makes sure
+that only the skills, their links, `skills-lock.json` and the pin changed, and
+runs the lock check. Commit the changes.
 
 The plain skills CLI command also works:
 
@@ -292,7 +294,7 @@ The "Update consumers" workflow opens one pull request in each consumer
 repository, as Dependabot does for a dependency. A consumer is a repository
 where the `qoax-skills-bot` GitHub App is installed and whose
 `skills-lock.json` has a skill from this repository. The workflow runs after
-each release tag, each Monday, and by hand.
+each successful run of the "Release" workflow, each Monday, and by hand.
 
 In each consumer, the pull request does two things:
 
@@ -306,16 +308,30 @@ The branch is `agent-skills/update`. Each run makes it again from the default
 branch, with one `ci:` commit for the pin and one `chore:` commit for the
 skills. The App is the author. When nothing changed and the pull request is
 still open, the bot closes it. When a person pushes a commit to the branch,
-the bot does not change the branch again until the pull request merges or
-closes.
+or amends a commit of the bot, the bot does not change the branch while the
+pull request is open. After a close without a merge, the bot makes the
+branch again.
 
 The App token makes the pull request, so the checks of the consumer run as
 they do for a person. A pull request from `GITHUB_TOKEN` starts no workflow
 run until a person approves it. `GITHUB_TOKEN` also cannot change a workflow
 file, so it cannot move the pin.
 
-The skills CLI never gets the token. The bot keeps the token out of
-`.git/config` and out of the environment of `npx`.
+The workflow has two jobs, so that no job has both the skills CLI and a token
+that can write:
+
+1. "Prepare" clones each consumer with an App token that can only read. Then
+   it revokes the token and runs `scripts/update-pr.sh --prepare`. The result
+   for each consumer is a patch and the texts of the pull request.
+2. "Publish" gets an App token that can write. `scripts/publish-pr.sh`
+   applies each patch to a new clone and checks each path again. Only the
+   skills of this repository, their links, `skills-lock.json` and the pin
+   lines may change. Then it pushes the branch and opens the pull request.
+
+The token goes to git only in the environment of each git command, not into
+`.git/config` and not onto the command line. The workflow starts on
+`workflow_run`, so GitHub always runs the workflow file of `main`. A tag on a
+commit that nobody reviewed thus cannot run a changed copy with the App key.
 
 ### Set up the bot
 
@@ -333,11 +349,14 @@ Do these steps one time. Steps 1 to 3 need an owner of qoax-community.
 3. Install the App on qoax-community and on angel-penchev. Select only the
    consumer repositories.
 4. In this repository, make the environment `skills-bot`:
-   - Deployment branches and tags: the branch `main` and the tag pattern
-     `v*.*.*`.
+   - Deployment branches and tags: "Selected branches and tags", with the
+     branch `main` only.
    - Environment secret `SKILLS_BOT_PRIVATE_KEY`: the private key.
    - Environment variable `SKILLS_BOT_CLIENT_ID`: the Client ID.
-5. Run "Update consumers" by hand with "dry-run" on. The log shows each pull
+5. Add a ruleset for `main` that requires a pull request. The environment
+   trusts each workflow file on `main`. Without the ruleset, each person with
+   write access can push a changed workflow to `main` and use the key.
+6. Run "Update consumers" by hand with "dry-run" on. The log shows each pull
    request that the bot would open. Then run it again with "dry-run" off.
 
 GitHub Free does not give organisation secrets to private repositories. Thus
@@ -378,6 +397,10 @@ Then:
    merge box.
 3. Keep the Dependabot bump of this action. Leave `bump-pin` off, because
    `GITHUB_TOKEN` cannot change a workflow file.
+
+In this mode, the skills CLI runs in the same job as the token. The script
+removes the token from the environment of the CLI, but a process of the same
+job can still read it. The token can write only to this one repository.
 
 ## Skills from other sources
 
@@ -426,7 +449,7 @@ DISABLE_TELEMETRY=1 npx skills@1.7.3 update -p -y NAME
   `sh scripts/self-test.sh` and `bash scripts/test-update-pr.sh`. The
   self-test installs every skill with the skills CLI and compares the
   hashes. The update test runs the bot on a scratch repository with a fake
-  `gh`. It needs bash 4 or later.
+  `gh`. It needs bash 4 or later and `jq`.
 - After the merge, make a release as "Releases" tells.
 
 ### Update modern-web-guidance
