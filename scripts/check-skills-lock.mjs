@@ -206,7 +206,8 @@ function fetchSource(source, ref, dirs) {
   git("config", "core.eol", "lf");
   git("remote", "add", "origin", `https://github.com/${source.replace(/\.git$/, "")}.git`);
   git("fetch", "-q", "--depth", "1", "--filter=blob:none", "origin", ref || "HEAD");
-  git("sparse-checkout", "set", "--no-cone", ...dirs.map((d) => `/${d}/`));
+  // A skill at the root of its source has the folder ".". Then check out all.
+  if (!dirs.includes(".")) git("sparse-checkout", "set", "--no-cone", ...dirs.map((d) => `/${d}/`));
   git("checkout", "-q", "FETCH_HEAD");
   return dir;
 }
