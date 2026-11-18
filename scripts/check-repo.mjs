@@ -11,7 +11,7 @@
 // - Skill names are unique across the plugins.
 // - No skill folder contains a symbolic link. The skills CLI hash skips them.
 // - Each skill in upstream/sources.json has its folder in plugins/<plugin>/skills/
-//   and each patch file it lists. Its "check" is "report" or not set.
+//   and each patch file and transform it names. Its "check" is "report" or not set.
 //
 // Exit status: 0 when all checks pass, 1 on an error.
 
@@ -98,6 +98,10 @@ const sources = readJson(join(root, "upstream", "sources.json"));
 for (const [name, src] of Object.entries(sources)) {
   const dir = join(pluginsDir, String(src.plugin), "skills", name);
   if (!isDir(dir)) errors.push(`upstream/sources.json: ${name} has no folder ${rel(dir)}`);
+  if (src.transform) {
+    const file = join(root, "upstream", "transforms", `${src.transform}.mjs`);
+    if (!isFile(file)) errors.push(`upstream/sources.json: ${name} names a missing transform ${rel(file)}`);
+  }
   for (const patch of src.patches ?? []) {
     const file = join(root, "upstream", "patches", name, patch);
     if (!isFile(file)) errors.push(`upstream/sources.json: ${name} lists a missing patch ${rel(file)}`);

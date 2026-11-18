@@ -13,6 +13,9 @@
 //
 // pull and verify use the same build step: fetch the upstream commit, copy the
 // listed files and the licence into a scratch folder, then apply the patches.
+// A source with "transform": NAME then runs upstream/transforms/NAME.mjs on
+// the folder. A transform finds its anchors in the text and fails when one is
+// missing, so it survives upstream edits that break a diff patch.
 //
 // Exit status of check: 0 when nothing changed, 3 when an upstream changed, 1 on error.
 // check only reports a change of a source with "check": "report". That change
@@ -42,6 +45,12 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const sourcesPath = join(repoRoot, "upstream", "sources.json");
 const sources = JSON.parse(readFileSync(sourcesPath, "utf-8"));
 const base = process.env.UPSTREAM_GIT_BASE ?? "https://github.com/";
+const transforms = {};
+for (const src of Object.values(sources)) {
+  if (src.transform && !transforms[src.transform]) {
+    transforms[src.transform] = (await import(join(repoRoot, "upstream", "transforms", `${src.transform}.mjs`))).default;
+  }
+}
 
 const git = (cwd, ...args) =>
   execFileSync("git", args, { cwd, encoding: "utf-8", stdio: ["ignore", "pipe", "pipe"] }).trim();
@@ -102,9 +111,10 @@ function build(name, src, ref) {
     if (missing.length > 0) throw new Error(`upstream no longer has: ${missing.join(", ")}`);
     for (const file of src.files) copyFile(join(from, file), join(out, file));
     copyFile(join(dir, licencePath), join(out, "LICENSE"));
-    for (const patch of src.patches) {
+    for (const patch of src.patches ?? []) {
       git(dir, "apply", `--directory=out/${name}`, join(repoRoot, "upstream", "patches", name, patch));
     }
+    if (src.transform) transforms[src.transform]({ name, src: { ...src, commit }, out });
     return { dir, out, commit, tree, dropped };
   } catch (error) {
     rmSync(dir, { recursive: true, force: true });

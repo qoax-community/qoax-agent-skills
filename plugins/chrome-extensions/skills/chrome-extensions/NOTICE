@@ -33,6 +33,6 @@ specifications:
 Changes
 
 Qoax Community did not change the upstream files. It added this NOTICE file
-and the LICENSE file. The patch that adds this file is in
-upstream/patches/chrome-extensions/ in
+and the LICENSE file. The script that adds this file is
+upstream/transforms/modern-web-guidance.mjs in
 https://github.com/qoax-community/qoax-agent-skills

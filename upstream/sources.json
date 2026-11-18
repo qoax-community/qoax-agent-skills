@@ -66,9 +66,14 @@
       "SKILL.md"
     ],
     "licence": "/LICENSE",
-    "patches": [
-      "0001-local-changes.patch"
-    ],
+    "transform": "modern-web-guidance",
+    "release": "v1.0.1",
+    "npm": {
+      "package": "modern-web-guidance",
+      "version": "1.0.1",
+      "integrity": "sha512-5ztUh5F1p2PewnSkA6EhsGUXqomaZY9qe6iWJCU4JbIQxHTky7s5lMJcPE4EbD1uhbQZIhl0HROH0+s6fIiGzg==",
+      "published": "2026-11-16T15:04:35.119Z"
+    },
     "check": "report"
   },
   "chrome-extensions": {
@@ -104,9 +109,8 @@
       "references/webstore/store-listing.md"
     ],
     "licence": "/LICENSE",
-    "patches": [
-      "0001-notice.patch"
-    ],
+    "transform": "modern-web-guidance",
+    "release": "v1.0.1",
     "check": "report"
   },
   "babysit-pr": {
