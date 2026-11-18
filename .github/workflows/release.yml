@@ -37,5 +37,5 @@ jobs:
             gh release upload "$TAG" dist/*.zip --clobber
           else
             gh release create "$TAG" dist/*.zip --verify-tag --title "$TAG" \
-              --notes "In the claude.ai organisation settings, remove the old uploads, then upload these zip files."
+              --notes "Test a new plugin as a personal claude.ai upload first. Then, in the claude.ai organisation settings, remove the old uploads and upload these zip files."
           fi
