@@ -14,15 +14,28 @@ this repository.
 | `grill-me` | `qoax-agent-skills` | `mattpocock/skills`, `skills/productivity/grill-me` | `4ae2317` | MIT, Matt Pocock |
 | `grilling` | `qoax-agent-skills` | `mattpocock/skills`, `skills/productivity/grilling` | `4ae2317` | MIT, Matt Pocock |
 | `writing-code-comments` | `qoax-agent-skills` | `posthog/posthog`, `.agents/skills/writing-code-comments` | `f18803e` | MIT (Expat), PostHog Inc. |
+| `modern-web-guidance` | `modern-web-guidance` | `GoogleChrome/modern-web-guidance`, `skills/modern-web-guidance` | `64a6d70` | Apache-2.0 and CC BY 4.0, Google Chrome |
+| `chrome-extensions` | `chrome-extensions` | `GoogleChrome/modern-web-guidance`, `skills/chrome-extensions` | `64a6d70` | Apache-2.0 and CC BY 4.0, Google Chrome |
 | `github-templates` | `qoax-agent-skills` | this repository | | MIT, Qoax Community |
 
 `upstream/sources.json` records the upstream commit of each third-party
 skill. Each skill folder has its own `LICENSE` file, so the licence goes with
 every copy.
 
+The `modern-web-guidance` and `chrome-extensions` plugins are not MIT.
+Upstream puts its code under Apache-2.0, and its documentation and guide
+content in `guides/` under CC BY 4.0. The two copies have no `guides/`
+folder, but they treat their documentation files as CC BY 4.0 too. The two
+skill folders also have a `NOTICE` file. It gives the source, the licences,
+the credit to MDN, W3C, WHATWG and IETF, and the local changes. Keep
+`LICENSE` and `NOTICE` with each copy.
+
 ASD-STE100 is a trademark of ASD. The `asd-ste100` skill is unofficial, and
 ASD does not support it. This repository does not include the ASD-STE100
 specification.
+
+The `modern-web-guidance` and `chrome-extensions` plugins are unofficial
+copies. Google does not support them.
 
 Local changes to third-party skills:
 
@@ -32,9 +45,36 @@ Local changes to third-party skills:
 - `asd-ste100`: some upstream files are not copied. These are the hooks,
   tests, installer, output style, README and plugin manifest.
   `hooks/run-python.cjs` stays, because `SKILL.md` uses it to run the linter.
-- `grill-me`, `grilling` and `writing-code-comments`: the upstream skill
-  folders have no `LICENSE`. The `LICENSE` in each folder here is a copy of the
-  file at the root of the upstream repository.
+- `modern-web-guidance`: the copy has only `SKILL.md`, not the guides. The
+  CLI reads the guides from its npm package, not from the skill folder.
+- `modern-web-guidance`: `SKILL.md` pins the CLI to version 1.0.1. The
+  `search`, `retrieve` and `legacy-scan` commands start with
+  `DISABLE_TELEMETRY=1 npx --prefer-offline -y modern-web-guidance@1.0.1`.
+  The offline retry uses `--offline` in place of `--prefer-offline`. Where a
+  guide shows `@latest`, the agent uses `@1.0.1` and keeps
+  `DISABLE_TELEMETRY=1`.
+- `modern-web-guidance`: without `DISABLE_TELEMETRY=1`, the CLI sends the
+  search text, the guide ids and the agent name to Google. The npm integrity
+  of 1.0.1 is
+  `sha512-5ztUh5F1p2PewnSkA6EhsGUXqomaZY9qe6iWJCU4JbIQxHTky7s5lMJcPE4EbD1uhbQZIhl0HROH0+s6fIiGzg==`.
+  The skill does not pin this value. Compare it with `npm view` at each
+  update.
+- `modern-web-guidance`: the agent always uses `npx`, not `pnpx`. It does not
+  run the CLI commands `install`, `update`, `uninstall`, `set-baseline`,
+  `set-allow-origin-trials` and `set-allow-volatile-features`. These commands
+  install skills without a pin, or write `.mwgrc` into the repository.
+- `modern-web-guidance`: the patch removes Step 4, which adds a
+  `### Modern Web Guidance` section to each reply. The agent names a guide id
+  only where it explains a choice.
+- `modern-web-guidance`: a line after the frontmatter says that Qoax
+  Community changed the file. The patch is in
+  `upstream/patches/modern-web-guidance/`.
+- `chrome-extensions`: the upstream files have no change. The patch in
+  `upstream/patches/chrome-extensions/` adds only `NOTICE`.
+- `grill-me`, `grilling`, `writing-code-comments`, `modern-web-guidance` and
+  `chrome-extensions`: the upstream skill folders have no `LICENSE`. The
+  `LICENSE` in each folder here is a copy of the file at the root of the
+  upstream repository.
 
 ## Add the skills to a repository
 
@@ -79,7 +119,15 @@ Then:
 
    Then write `uses: qoax-community/qoax-agent-skills@<commit> # vX.Y.Z` in
    both jobs.
-5. In `AGENTS.md`, tell Windows users to clone with symbolic links. The
+5. If `.github/dependabot.yml` has an `allow` list for `github-actions`, add
+   this entry to it. Without the entry, Dependabot does not bump the pin of
+   the action:
+
+   ```yaml
+   - dependency-name: "qoax-community/qoax-agent-skills"
+   ```
+
+6. In `AGENTS.md`, tell Windows users to clone with symbolic links. The
    "Symbolic links" section below gives the steps.
 
 Commit the skills from this repository, also in a repository that does not
@@ -102,6 +150,53 @@ and needs no `allow` input. A restore step with `experimental_install` also
 installs the committed skills again. When the main branch of this repository
 has a newer skill, git then shows changes in `.agents/skills` and
 `skills-lock.json`. Commit them as an update, or discard them.
+
+### Web repositories
+
+A repository with browser code also gets the `modern-web-guidance` skill. A
+repository with a browser extension also gets `chrome-extensions`. Add the
+skills with the same command:
+
+```sh
+DISABLE_TELEMETRY=1 npx skills@1.7.3 add qoax-community/qoax-agent-skills \
+  --skill modern-web-guidance -a claude-code codex gemini-cli -y
+```
+
+For a browser extension, use `--skill modern-web-guidance chrome-extensions`.
+
+The skill runs the `modern-web-guidance` CLI with npx. Each computer that
+uses the skill needs Node 22 or later and access to registry.npmjs.org.
+
+Then do these steps, in addition to the steps above:
+
+1. In `AGENTS.md`, add a short "Web guidance" paragraph:
+   - The skill needs Node 22 or later and access to registry.npmjs.org.
+   - Use the version of the `modern-web-guidance` CLI that the skill names.
+   - Do not run these commands of the `modern-web-guidance` CLI: `install`,
+     `update`, `uninstall`, `set-baseline`, `set-allow-origin-trials` and
+     `set-allow-volatile-features`.
+   - Do not install a `modern-web-guidance` plugin from another marketplace
+     for this repository.
+2. In `AGENTS.md`, add a `**Browser Support:**` line that names the browsers
+   or the Baseline target of the repository. Without it, the skill adds a
+   fallback for each feature that is not Baseline Widely available.
+3. In `.claude/settings.json`, turn off the plugin copies of the skill. The
+   `@qoax` copy comes from the main branch of this repository, not from the
+   lock. The other two copies run the `@latest` CLI with telemetry on:
+
+   ```json
+   {
+     "enabledPlugins": {
+       "modern-web-guidance@qoax": false,
+       "modern-web-guidance@claude-plugins-official": false,
+       "modern-web-guidance@googlechrome": false
+     }
+   }
+   ```
+
+   For a browser extension, also add `"chrome-extensions@qoax": false`. If
+   the repository commits other skills from this repository, also turn off
+   their plugins. The "Claude Code" section below gives the names.
 
 ### Symbolic links
 
@@ -194,6 +289,112 @@ when the main branch of this repository has a newer skill than the lock.
 - After the merge, make a release and upload the new zip files to claude.ai.
   Without a release, claude.ai keeps the old skill.
 
+### Update modern-web-guidance
+
+Upstream releases the `modern-web-guidance` and `chrome-extensions` skills
+almost each week. The "Upstream skills" workflow shows a new release in its
+job summary, but the job does not fail. Update the pin at most once a month.
+
+Do not let the pin get older than 60 days. The age counts from the date at
+the start of the `--skill-version` value in `SKILL.md`. The pinned CLI has
+the same skill version and shows no warning. But an agent can run a newer
+CLI, for example the `@latest` form from a guide. After 60 days, that CLI
+tells the agent to make the user update the skill. For 1.0.1, the skill
+version starts with `2026_11_10`, so update before 2027-01-09.
+
+1. Get the commit of the new release tag. For an annotated tag, use the line
+   that ends in `^{}`:
+
+   ```sh
+   git ls-remote https://github.com/GoogleChrome/modern-web-guidance.git 'refs/tags/vX.Y.Z*'
+   ```
+
+2. Examine the npm package of the release. Do not run it:
+
+   ```sh
+   npm view modern-web-guidance@X.Y.Z dependencies scripts dist.integrity dist.attestations
+   ```
+
+   The output must show no `dependencies`, no `scripts` and a provenance
+   attestation. Keep the `dist.integrity` value for this README.
+3. In a new empty folder, get the package and read its skill version:
+
+   ```sh
+   npm pack --ignore-scripts modern-web-guidance@X.Y.Z
+   tar -xzf modern-web-guidance-X.Y.Z.tgz
+   cat package/skills/modern-web-guidance/skill-version.txt
+   ```
+
+   The value must be the same as `--skill-version` in the new upstream
+   `SKILL.md`.
+4. Make sure that the upstream commit has no `NOTICE` file. If it has one,
+   add its text to the two `NOTICE` files.
+5. Make the patch of each skill again, because each `NOTICE` has the commit.
+   `NAME` is `modern-web-guidance` or `chrome-extensions`. `PATCH` is the
+   file name in `"patches"`.
+   1. In `upstream/sources.json`, set `"patches"` of `NAME` to `[]`.
+   2. Copy the upstream files. Put them in the index for the diff in
+      sub-step 5. Then apply the old patch where it still fits:
+
+      ```sh
+      dir=plugins/NAME/skills/NAME
+      node scripts/sync-upstream.mjs pull NAME COMMIT
+      git add "$dir"
+      git apply --reject --directory="$dir" upstream/patches/NAME/PATCH
+      ```
+
+   3. Apply each `.rej` hunk by hand, then delete the `.rej` files.
+   4. Put the new version and commit in `SKILL.md` and `NOTICE`.
+   5. Write the new patch:
+
+      ```sh
+      git add -N "$dir"
+      git diff --relative="$dir" >upstream/patches/NAME/PATCH
+      ```
+
+   6. Put `PATCH` back in `"patches"` and run `pull` again.
+   7. Reset the index of the folder. Without this step, a commit can take the
+      upstream files from sub-step 2, not the patched files:
+
+      ```sh
+      git reset -q -- "$dir"
+      ```
+
+6. Run `node scripts/sync-upstream.mjs verify`, `node scripts/check-repo.mjs`
+   and `sh scripts/self-test.sh`.
+7. In this README, change the commit in the skills table. Change the version
+   and the npm integrity in "Local changes". In the 60-day paragraph above,
+   change the version and the two dates.
+8. Open a pull request. After the merge, make a release and upload the zip
+   files to claude.ai.
+9. The "Skills are current" job then fails in each web repository. Update
+   each one as "Update a repository" tells. If Dependabot opens a pull
+   request that moves the pin of this action to the new release, put that
+   change in the same pull request. Then close the Dependabot pull request.
+
+### Stop or remove modern-web-guidance
+
+Use these steps when a CLI release is bad or the skill must go:
+
+- **Stop the CLI in one repository at once.** Add this line to the "Web
+  guidance" text of its `AGENTS.md`: "Do not run the `modern-web-guidance`
+  CLI." Agents read it when a session starts.
+- **Stop the CLI everywhere.** Change the patch so that `SKILL.md` tells
+  agents not to run the CLI. Make a release, then update each web
+  repository.
+- **Remove the skill.** Delete the plugin and its source here, and make a
+  release. Remove the zip from claude.ai. In each web repository, run
+  `DISABLE_TELEMETRY=1 npx skills@1.7.3 remove modern-web-guidance -y` and
+  remove the "Web guidance" text. Until that pull request merges, the
+  "Skills are current" job of the repository fails and names the `remove`
+  command.
+- **One person.** A person can tell the agent not to use the skill in a
+  session. No permanent personal opt-out is tested.
+
+An npm version cannot change after its publish. But the publisher can
+unpublish a version in the first 72 hours. Pin a version only when it is
+older than 72 hours.
+
 ## Releases
 
 A release is an annotated tag `vX.Y.Z` on `main`. Make a release after each
@@ -221,6 +422,19 @@ This repository is also a Claude Code plugin marketplace with the name
 claude plugin marketplace add qoax-community/qoax-agent-skills
 claude plugin install asd-ste100@qoax
 claude plugin install qoax-agent-skills@qoax
+claude plugin install modern-web-guidance@qoax
+```
+
+Install `chrome-extensions@qoax` only for work on browser extensions.
+
+Anthropic's `claude-plugins-official` marketplace and Google's `googlechrome`
+marketplace also have a `modern-web-guidance` plugin. Those copies run the
+`@latest` CLI with telemetry on. Use `modern-web-guidance@qoax`. If you have
+one of the other copies, uninstall it:
+
+```sh
+claude plugin uninstall modern-web-guidance@claude-plugins-official
+claude plugin uninstall modern-web-guidance@googlechrome
 ```
 
 The plugin manifests have no `version`. Claude Code then uses the commit as
@@ -237,7 +451,9 @@ in the repository, disable the plugins in its `.claude/settings.json`:
 {
   "enabledPlugins": {
     "asd-ste100@qoax": false,
-    "qoax-agent-skills@qoax": false
+    "qoax-agent-skills@qoax": false,
+    "modern-web-guidance@qoax": false,
+    "chrome-extensions@qoax": false
   }
 }
 ```
@@ -249,23 +465,29 @@ This repository is public, so organisation sync is not set up. Instead, an
 Owner of the claude.ai organisation uploads a zip file for each plugin after
 each release:
 
-1. Get `asd-ste100.zip` and `qoax-agent-skills.zip` from the GitHub release.
-   If the release has no zip files, run the release workflow by hand with
-   the tag. Or build them in a clone of this repository:
+1. Get the zip files from the GitHub release: `asd-ste100.zip`,
+   `chrome-extensions.zip`, `modern-web-guidance.zip` and
+   `qoax-agent-skills.zip`. If the release has no zip files, run the release
+   workflow by hand with the tag. Or build them in a clone of this
+   repository:
 
    ```sh
    sh scripts/build-zips.sh vX.Y.Z
    ```
 
    The script writes the zip files to `dist/`.
-2. In the organisation settings, remove the old uploads of the two plugins.
-3. Upload the two new zip files.
+2. For a new plugin, test its zip file as a personal upload first. For
+   `modern-web-guidance`, try one HTML task. The skill runs npx, so the test
+   shows if claude.ai can run the CLI.
+3. In the organisation settings, remove the old uploads of these plugins.
+4. Upload the new zip files. Each plugin has its own zip file, so the
+   organisation can leave out `chrome-extensions.zip`.
 
 Remove the old uploads first. The uploads before v1.0.0 came from other
 repositories. Their versions are 2.0.5 (`asd-ste100`) and 1.0.0
-(`qoax-agent-skills`). The new zip files have version 1.0.0. That is not
-higher than the old versions. When the old uploads are gone, the organisation
-has one copy of each plugin, with the release version.
+(`qoax-agent-skills`). A zip file from this repository can have the same or a
+lower version, for example 1.1.0 for `asd-ste100`. When the old uploads are
+gone, the organisation has one copy of each plugin, with the release version.
 
 Each zip file has the release version in its `plugin.json`. Compare it with
 the latest release to see if claude.ai has the current skills. The
