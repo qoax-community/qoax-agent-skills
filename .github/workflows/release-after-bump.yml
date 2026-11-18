@@ -1,0 +1,64 @@
+# After a push to main that changes the modern-web-guidance release in
+# upstream/sources.json, tag the next patch release and start "Release".
+# A tag that GITHUB_TOKEN pushes starts no workflow, so the job starts
+# "Release" by hand. The release then starts "Update consumers".
+name: Release after a bump
+
+on:
+  push:
+    branches: [main]
+    paths: [upstream/sources.json]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-after-bump
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag the next patch release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Tag when the modern-web-guidance release changed
+        env:
+          BEFORE: ${{ github.event.before }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          release() { git show "$1:upstream/sources.json" | jq -r '."modern-web-guidance".release // empty'; }
+          if ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo "No earlier commit to compare with."
+            exit 0
+          fi
+          old=$(release "$BEFORE")
+          new=$(release HEAD)
+          if [ "$old" = "$new" ]; then
+            echo "The modern-web-guidance release did not change."
+            exit 0
+          fi
+          if [ -n "$(git tag --points-at HEAD 'v*.*.*')" ]; then
+            echo "HEAD already has a release tag."
+            exit 0
+          fi
+          latest=$(git tag -l 'v*.*.*' --sort=-v:refname | head -1)
+          if ! [[ $latest =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::No vX.Y.Z tag."
+            exit 1
+          fi
+          tag="v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.$((BASH_REMATCH[3] + 1))"
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            tag -a "$tag" -m "$tag" -m "modern-web-guidance $old to $new."
+          b64=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')
+          echo "::add-mask::$b64"
+          GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.https://github.com/.extraheader \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $b64" git push -q origin "refs/tags/$tag"
+          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref main -f tag="$tag"
+          echo "Tagged $tag (modern-web-guidance $old to $new) and started Release." | tee -a "$GITHUB_STEP_SUMMARY"
