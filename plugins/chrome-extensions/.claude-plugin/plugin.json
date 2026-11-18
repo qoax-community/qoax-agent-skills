@@ -1,0 +1,8 @@
+{
+  "name": "chrome-extensions",
+  "description": "Chrome extension guidance for Manifest V3 and the Chrome Web Store, from GoogleChrome/modern-web-guidance, with no changes.",
+  "author": { "name": "Google Chrome (upstream skill), packaged by Qoax Community" },
+  "homepage": "https://github.com/GoogleChrome/modern-web-guidance/tree/main/skills/chrome-extensions",
+  "repository": "https://github.com/qoax-community/qoax-agent-skills",
+  "license": "Apache-2.0 AND CC-BY-4.0"
+}

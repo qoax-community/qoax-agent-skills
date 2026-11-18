@@ -1,0 +1,8 @@
+{
+  "name": "modern-web-guidance",
+  "description": "Modern web guidance for HTML, CSS and client-side JavaScript, from GoogleChrome/modern-web-guidance, with a pinned CLI version and no telemetry.",
+  "author": { "name": "Google Chrome (upstream skill), packaged by Qoax Community" },
+  "homepage": "https://github.com/GoogleChrome/modern-web-guidance/tree/main/skills/modern-web-guidance",
+  "repository": "https://github.com/qoax-community/qoax-agent-skills",
+  "license": "Apache-2.0 AND CC-BY-4.0"
+}
