@@ -44,6 +44,11 @@ jobs:
             echo "The modern-web-guidance release did not change."
             exit 0
           fi
+          # The commit that adds the field is not a bump.
+          if [ -z "$old" ]; then
+            echo "upstream/sources.json had no modern-web-guidance release before."
+            exit 0
+          fi
           if [ -n "$(git tag --points-at HEAD 'v*.*.*')" ]; then
             echo "HEAD already has a release tag."
             exit 0
