@@ -12,6 +12,16 @@
       "name": "qoax-agent-skills",
       "source": "./plugins/qoax-agent-skills",
       "description": "Qoax organisation templates, plan questioning and code comment rules."
+    },
+    {
+      "name": "modern-web-guidance",
+      "source": "./plugins/modern-web-guidance",
+      "description": "Modern web guidance for HTML, CSS and client-side JavaScript from GoogleChrome/modern-web-guidance, with a pinned CLI version and no telemetry."
+    },
+    {
+      "name": "chrome-extensions",
+      "source": "./plugins/chrome-extensions",
+      "description": "Chrome extension guidance for Manifest V3 and the Chrome Web Store from GoogleChrome/modern-web-guidance."
     }
   ]
 }
