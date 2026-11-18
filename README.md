@@ -76,14 +76,14 @@ Local changes to third-party skills:
   run the CLI commands `install`, `update`, `uninstall`, `set-baseline`,
   `set-allow-origin-trials` and `set-allow-volatile-features`. These commands
   install skills without a pin, or write `.mwgrc` into the repository.
-- `modern-web-guidance`: the patch removes Step 4, which adds a
+- `modern-web-guidance`: the transform removes Step 4, which adds a
   `### Modern Web Guidance` section to each reply. The agent names a guide id
   only where it explains a choice.
 - `modern-web-guidance`: a line after the frontmatter says that Qoax
-  Community changed the file. The patch is in
-  `upstream/patches/modern-web-guidance/`.
-- `chrome-extensions`: the upstream files have no change. The patch in
-  `upstream/patches/chrome-extensions/` adds only `NOTICE`.
+  Community changed the file. The transform is
+  `upstream/transforms/modern-web-guidance.mjs`.
+- `chrome-extensions`: the upstream files have no change. The same transform
+  adds only `NOTICE`.
 - `file-pr`: the agent fills the pull request template of the repository and
   adds no model, harness or AI attribution line to the description. Upstream
   ends each description with `Created with <model> in <harness>.`, and the
@@ -403,7 +403,8 @@ Do these steps one time. Steps 1 to 3 need an owner of qoax-community.
      account that owns it.
 2. Make a private key for the App. Write down the Client ID.
 3. Install the App on qoax-community and on angel-penchev. Select only the
-   consumer repositories.
+   consumer repositories, and qoax-agent-skills for the modern-web-guidance
+   bump.
 4. In this repository, make the environment `skills-bot`:
    - Deployment branches and tags: "Selected branches and tags", with the
      branch `main` only.
@@ -495,10 +496,13 @@ DISABLE_TELEMETRY=1 npx skills@1.7.3 update -p -y NAME
      update the pin. The "Upstream skills" workflow runs the check each
      Monday and writes the result to its job summary.
   2. Run `node scripts/sync-upstream.mjs pull NAME COMMIT`. It copies the
-     files in `"files"` and the licence, applies the patches and updates
-     `upstream/sources.json`.
+     files in `"files"` and the licence, applies the patches and the
+     transform, and updates `upstream/sources.json`.
   3. For a local change, add a patch to `upstream/patches/NAME/` and its
-     file name to `"patches"`. Then run `pull` again.
+     file name to `"patches"`. Then run `pull` again. For a skill that
+     changes often upstream, use a transform: a script in
+     `upstream/transforms/` that finds each anchor in the text. Put its name
+     in `"transform"`.
   4. Run `node scripts/sync-upstream.mjs verify`. It builds each skill again
      at its pinned commit and compares it with `plugins/`.
 - Before a pull request, run `node scripts/check-repo.mjs`,
@@ -511,8 +515,8 @@ DISABLE_TELEMETRY=1 npx skills@1.7.3 update -p -y NAME
 ### Update modern-web-guidance
 
 Upstream releases the `modern-web-guidance` and `chrome-extensions` skills
-almost each week. The "Upstream skills" workflow shows a new release in its
-job summary, but the job does not fail. Update the pin at most once a month.
+almost each week. The "Bump modern-web-guidance" workflow moves the pin at
+most once in 28 days.
 
 Do not let the pin get older than 60 days. The age counts from the date at
 the start of the `--skill-version` value in `SKILL.md`. The pinned CLI has
@@ -521,75 +525,50 @@ CLI, for example the `@latest` form from a guide. After 60 days, that CLI
 tells the agent to make the user update the skill. For 1.0.1, the skill
 version starts with `2026_11_10`, so update before 2027-01-09.
 
-1. Get the commit of the new release tag. For an annotated tag, use the line
-   that ends in `^{}`:
+The workflow runs each Monday and by hand:
 
-   ```sh
-   git ls-remote https://github.com/GoogleChrome/modern-web-guidance.git 'refs/tags/vX.Y.Z*'
-   ```
+1. `scripts/bump-mwg.mjs` takes the newest release that npm published at
+   least 7 days before. npm lets a publisher unpublish a version in its
+   first 72 hours.
+2. The script examines the npm package of the release. It does not run the
+   package. Each gate must pass:
+   - The package has no dependencies and no scripts.
+   - The tarball has the integrity that npm gives.
+   - `npm audit signatures` verifies the registry signature and the
+     attestation.
+   - The provenance names `GoogleChrome/modern-web-guidance-src` and its
+     `.github/workflows/publish.yml`.
+   - `skill-version.txt` in the package is the same as `--skill-version` in
+     the upstream `SKILL.md`.
+   - The upstream commit has no `NOTICE` file.
+3. The script writes the release to `upstream/sources.json` and copies the
+   two skills again. The transform `upstream/transforms/modern-web-guidance.mjs`
+   makes the local changes. When an anchor of the transform is not in the
+   upstream text, the job fails. Then change the transform by hand.
+4. The script changes the commit, the version, the integrity and the dates
+   in this README. Then the job runs `check-repo.mjs`,
+   `sync-upstream.mjs verify` and `self-test.sh`.
+5. The bot opens the pull request on the branch
+   `upstream/modern-web-guidance`. The body has the gate results and a report
+   of the npm package change: the files, the size, new hosts in the code, and
+   calls such as `child_process` and `fetch`.
+6. A person reads the `SKILL.md` diff and the report, and merges.
+7. After the merge, "Release after a bump" tags the next patch release and
+   starts "Release". The release starts "Update consumers", which opens an
+   update pull request in each web repository.
 
-2. Examine the npm package of the release. Do not run it:
+The workflow uses the `skills-bot` environment and the App, as "Set up the
+bot" tells. To bump to one version, run the workflow by hand and give the
+version. "force" bumps also when the pin is less than 28 days old.
 
-   ```sh
-   npm view modern-web-guidance@X.Y.Z dependencies scripts dist.integrity dist.attestations
-   ```
+To bump on a computer, run this command in a clean clone. Then commit and
+open a pull request:
 
-   The output must show no `dependencies`, no `scripts` and a provenance
-   attestation. Keep the `dist.integrity` value for this README.
-3. In a new empty folder, get the package and read its skill version:
+```sh
+node scripts/bump-mwg.mjs --version X.Y.Z --force
+```
 
-   ```sh
-   npm pack --ignore-scripts modern-web-guidance@X.Y.Z
-   tar -xzf modern-web-guidance-X.Y.Z.tgz
-   cat package/skills/modern-web-guidance/skill-version.txt
-   ```
-
-   The value must be the same as `--skill-version` in the new upstream
-   `SKILL.md`.
-4. Make sure that the upstream commit has no `NOTICE` file. If it has one,
-   add its text to the two `NOTICE` files.
-5. Make the patch of each skill again, because each `NOTICE` has the commit.
-   `NAME` is `modern-web-guidance` or `chrome-extensions`. `PATCH` is the
-   file name in `"patches"`.
-   1. In `upstream/sources.json`, set `"patches"` of `NAME` to `[]`.
-   2. Copy the upstream files. Put them in the index for the diff in
-      sub-step 5. Then apply the old patch where it still fits:
-
-      ```sh
-      dir=plugins/NAME/skills/NAME
-      node scripts/sync-upstream.mjs pull NAME COMMIT
-      git add "$dir"
-      git apply --reject --directory="$dir" upstream/patches/NAME/PATCH
-      ```
-
-   3. Apply each `.rej` hunk by hand, then delete the `.rej` files.
-   4. Put the new version and commit in `SKILL.md` and `NOTICE`.
-   5. Write the new patch:
-
-      ```sh
-      git add -N "$dir"
-      git diff --relative="$dir" >upstream/patches/NAME/PATCH
-      ```
-
-   6. Put `PATCH` back in `"patches"` and run `pull` again.
-   7. Reset the index of the folder. Without this step, a commit can take the
-      upstream files from sub-step 2, not the patched files:
-
-      ```sh
-      git reset -q -- "$dir"
-      ```
-
-6. Run `node scripts/sync-upstream.mjs verify`, `node scripts/check-repo.mjs`
-   and `sh scripts/self-test.sh`.
-7. In this README, change the commit in the skills table. Change the version
-   and the npm integrity in "Local changes". In the 60-day paragraph above,
-   change the version and the two dates.
-8. Open a pull request. After the merge, make a release.
-9. After the release, "Update consumers" opens an update pull request in
-   each web repository, with the skills and the new pin. Without the bot,
-   update each one as "Update a repository" tells. If Dependabot opens a pull
-   request that moves the pin of this action to the new release, put that
-   change in the same pull request. Then close the Dependabot pull request.
+With `--check-only`, the script runs only the gates and changes nothing.
 
 ### Stop or remove modern-web-guidance
 
@@ -598,7 +577,7 @@ Use these steps when a CLI release is bad or the skill must go:
 - **Stop the CLI in one repository at once.** Add this line to the "Web
   guidance" text of its `AGENTS.md`: "Do not run the `modern-web-guidance`
   CLI." Agents read it when a session starts.
-- **Stop the CLI everywhere.** Change the patch so that `SKILL.md` tells
+- **Stop the CLI everywhere.** Change the transform so that `SKILL.md` tells
   agents not to run the CLI. Make a release, then update each web
   repository.
 - **Remove the skill.** Delete the plugin and its source here, and make a
