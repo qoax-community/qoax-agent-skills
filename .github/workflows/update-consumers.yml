@@ -1,0 +1,71 @@
+# Opens or refreshes one skills update pull request in each consumer
+# repository, as Dependabot does for a dependency. A consumer is a repository
+# where the GitHub App of the skills bot is installed and whose
+# skills-lock.json has a skill from this repository. The pull request also
+# moves the pin of this action to the latest release.
+#
+# The App token makes the pull requests, so their checks run as for a person.
+# The README section "Update pull requests" gives the setup.
+name: Update consumers
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: Update only this repository, as OWNER/NAME. Leave it empty for all.
+        default: ""
+      dry-run:
+        description: Make the commits, but push nothing and open no pull request.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-consumers
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Update the consumers of ${{ matrix.owner }}
+    runs-on: ubuntu-latest
+    # The environment holds the key of the App. Its deployment rule lets only
+    # main and the release tags use it.
+    environment: skills-bot
+    strategy:
+      fail-fast: false
+      matrix:
+        owner: [qoax-community, angel-penchev]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - id: token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.SKILLS_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.SKILLS_BOT_PRIVATE_KEY }}
+          owner: ${{ matrix.owner }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: write
+      - name: Update each consumer
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          APP_SLUG: ${{ steps.token.outputs.app-slug }}
+          OWNER: ${{ matrix.owner }}
+          ONLY: ${{ inputs.repository }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          args=(--owner "$OWNER")
+          [ -n "$ONLY" ] && args+=(--only "$ONLY")
+          [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          bash scripts/update-consumers.sh "${args[@]}"
