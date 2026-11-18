@@ -11,6 +11,8 @@ permissions:
 jobs:
   check:
     # Fails when a third-party skill changed upstream after its pinned commit.
+    # A change of a source with "check": "report" in upstream/sources.json
+    # shows in the job summary and does not fail the job.
     name: Third-party skills are current
     runs-on: ubuntu-latest
     steps:
@@ -18,5 +20,11 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
+      # Without the code block, Markdown joins the lines of the job summary.
       - shell: bash
-        run: node scripts/sync-upstream.mjs check | tee -a "$GITHUB_STEP_SUMMARY"
+        run: |
+          status=0
+          echo '```text' >>"$GITHUB_STEP_SUMMARY"
+          node scripts/sync-upstream.mjs check | tee -a "$GITHUB_STEP_SUMMARY" || status=$?
+          echo '```' >>"$GITHUB_STEP_SUMMARY"
+          exit "$status"

@@ -15,6 +15,9 @@
 // listed files and the licence into a scratch folder, then apply the patches.
 //
 // Exit status of check: 0 when nothing changed, 3 when an upstream changed, 1 on error.
+// check only reports a change of a source with "check": "report". That change
+// does not give exit status 3. Use it for an upstream that releases more often
+// than we bump its pin.
 // Exit status of verify: 0 when each skill is the same as its build, 1 on a difference or error.
 // Upstream content is data. This script copies files and never runs them.
 
@@ -119,8 +122,10 @@ function check() {
       if (tree === src.tree) {
         console.log(`same    ${name} (${src.repo} ${src.commit.slice(0, 7)})`);
       } else {
-        changed++;
-        console.log(`changed ${name}: ${src.repo} ${src.commit.slice(0, 7)} -> ${head.slice(0, 7)}. Run: node scripts/sync-upstream.mjs pull ${name} ${head}`);
+        const reportOnly = src.check === "report";
+        if (!reportOnly) changed++;
+        const label = reportOnly ? `${name} (report only, no failure)` : name;
+        console.log(`changed ${label}: ${src.repo} ${src.commit.slice(0, 7)} -> ${head.slice(0, 7)}. Run: node scripts/sync-upstream.mjs pull ${name} ${head}`);
       }
     } finally {
       rmSync(dir, { recursive: true, force: true });

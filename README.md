@@ -176,7 +176,11 @@ when the main branch of this repository has a newer skill than the lock.
 - A Qoax skill: change it in `plugins/` and open a pull request.
 - A third-party skill: do not edit the copied files.
   1. Run `node scripts/sync-upstream.mjs check`. It shows each skill whose
-     upstream folder changed.
+     upstream folder changed, and then exits with status 3. A change of a
+     source with `"check": "report"` in `upstream/sources.json` does not
+     give status 3. Use it for an upstream that releases more often than we
+     update the pin. The "Upstream skills" workflow runs the check each
+     Monday and writes the result to its job summary.
   2. Run `node scripts/sync-upstream.mjs pull NAME COMMIT`. It copies the
      files in `"files"` and the licence, applies the patches and updates
      `upstream/sources.json`.

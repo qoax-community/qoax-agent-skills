@@ -13,7 +13,7 @@
 // - Skill names are unique across the plugins.
 // - No skill folder contains a symbolic link. The skills CLI hash skips them.
 // - Each skill in upstream/sources.json has its folder in plugins/<plugin>/skills/
-//   and each patch file it lists.
+//   and each patch file it lists. Its "check" is "report" or not set.
 //
 // Exit status: 0 when all checks pass, 1 on an error.
 
@@ -104,6 +104,9 @@ for (const [name, src] of Object.entries(sources)) {
   for (const patch of src.patches ?? []) {
     const file = join(root, "upstream", "patches", name, patch);
     if (!isFile(file)) errors.push(`upstream/sources.json: ${name} lists a missing patch ${rel(file)}`);
+  }
+  if ("check" in src && src.check !== "report") {
+    errors.push(`upstream/sources.json: ${name} has "check": ${JSON.stringify(src.check)}. Use "report" or remove it.`);
   }
 }
 
