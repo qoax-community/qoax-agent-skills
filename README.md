@@ -286,8 +286,7 @@ when the main branch of this repository has a newer skill than the lock.
 - Before a pull request, run `node scripts/check-repo.mjs` and
   `sh scripts/self-test.sh`. The self-test installs every skill with the
   skills CLI and compares the hashes.
-- After the merge, make a release and upload the new zip files to claude.ai.
-  Without a release, claude.ai keeps the old skill.
+- After the merge, make a release as "Releases" tells.
 
 ### Update modern-web-guidance
 
@@ -365,8 +364,7 @@ version starts with `2026_11_10`, so update before 2027-01-09.
 7. In this README, change the commit in the skills table. Change the version
    and the npm integrity in "Local changes". In the 60-day paragraph above,
    change the version and the two dates.
-8. Open a pull request. After the merge, make a release and upload the zip
-   files to claude.ai.
+8. Open a pull request. After the merge, make a release.
 9. The "Skills are current" job then fails in each web repository. Update
    each one as "Update a repository" tells. If Dependabot opens a pull
    request that moves the pin of this action to the new release, put that
@@ -383,7 +381,7 @@ Use these steps when a CLI release is bad or the skill must go:
   agents not to run the CLI. Make a release, then update each web
   repository.
 - **Remove the skill.** Delete the plugin and its source here, and make a
-  release. Remove the zip from claude.ai. In each web repository, run
+  release. In each web repository, run
   `DISABLE_TELEMETRY=1 npx skills@1.7.3 remove modern-web-guidance -y` and
   remove the "Web guidance" text. Until that pull request merges, the
   "Skills are current" job of the repository fails and names the `remove`
@@ -406,9 +404,8 @@ git tag -a vX.Y.Z -m vX.Y.Z
 git push origin vX.Y.Z
 ```
 
-The release workflow then builds a zip file for each plugin and attaches it
-to the GitHub release. Upload the zip files to claude.ai. The "claude.ai"
-section below gives the steps.
+The release workflow then makes the GitHub release, with notes from the
+merged pull requests.
 
 Consumers pin the action by the commit of the tag, not by the tag name. Do not
 move or delete a tag after you push it. The skills CLI does not read the tags.
@@ -460,39 +457,18 @@ in the repository, disable the plugins in its `.claude/settings.json`:
 
 ## claude.ai
 
-claude.ai organisation sync accepts only a private marketplace repository.
-This repository is public, so organisation sync is not set up. Instead, an
-Owner of the claude.ai organisation uploads a zip file for each plugin after
-each release:
+This repository has no claude.ai upload. The skills reach agents in two ways:
 
-1. Get the zip files from the GitHub release: `asd-ste100.zip`,
-   `chrome-extensions.zip`, `modern-web-guidance.zip` and
-   `qoax-agent-skills.zip`. If the release has no zip files, run the release
-   workflow by hand with the tag. Or build them in a clone of this
-   repository:
+- the copies in each repository, which the skills CLI adds and the lock pins
+- the `qoax` marketplace for Claude Code
 
-   ```sh
-   sh scripts/build-zips.sh vX.Y.Z
-   ```
+claude.ai organisation sync accepts only a private marketplace repository, and
+this repository is public. An upload also syncs into the Claude desktop app,
+next to the copies in each repository. Then the agent has two copies of each
+skill, and a repository cannot turn off the uploaded copy.
 
-   The script writes the zip files to `dist/`.
-2. For a new plugin, test its zip file as a personal upload first. For
-   `modern-web-guidance`, try one HTML task. The skill runs npx, so the test
-   shows if claude.ai can run the CLI.
-3. In the organisation settings, remove the old uploads of these plugins.
-4. Upload the new zip files. Each plugin has its own zip file, so the
-   organisation can leave out `chrome-extensions.zip`.
-
-Remove the old uploads first. The uploads before v1.0.0 came from other
-repositories. Their versions are 2.0.5 (`asd-ste100`) and 1.0.0
-(`qoax-agent-skills`). A zip file from this repository can have the same or a
-lower version, for example 1.1.0 for `asd-ste100`. When the old uploads are
-gone, the organisation has one copy of each plugin, with the release version.
-
-Each zip file has the release version in its `plugin.json`. Compare it with
-the latest release to see if claude.ai has the current skills. The
-`plugin.json` files in this repository have no version, so the version is
-only in the zip files.
+Remove the old uploads of `asd-ste100` and `qoax-agent-skills` from the
+claude.ai organisation settings and from your personal uploads.
 
 ## Commit messages
 
