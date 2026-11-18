@@ -45,3 +45,44 @@ for mode in lock upstream; do
   esac
 done
 echo "ok   an unknown source fails the lock and the upstream check"
+
+# Lock entries of other sources: off by default, a warning with "report", a
+# failure with "fail". The upstream check reads one checkout for each source.
+other="$work/other"
+mkdir -p "$other/repo/.agents/skills/mine" "$other/repo/.claude/skills/theirs" "$other/up-mine/skills/mine" "$other/up-theirs/skills/theirs"
+cd "$other/repo"
+printf 'mine\n' >.agents/skills/mine/SKILL.md
+printf 'theirs\n' >.claude/skills/theirs/SKILL.md
+ln -s ../../.agents/skills/mine .claude/skills/mine
+cp .agents/skills/mine/SKILL.md "$other/up-mine/skills/mine/SKILL.md"
+printf 'theirs, newer\n' >"$other/up-theirs/skills/theirs/SKILL.md"
+node -e '
+  const { createHash } = require("crypto"); const fs = require("fs");
+  const hash = (file) => createHash("sha256").update("SKILL.md").update(fs.readFileSync(file)).digest("hex");
+  fs.writeFileSync("skills-lock.json", JSON.stringify({ version: 1, skills: {
+    mine: { source: "me/skills", sourceType: "github", skillPath: "skills/mine/SKILL.md", computedHash: hash(".agents/skills/mine/SKILL.md") },
+    theirs: { source: "them/skills", sourceType: "github", skillPath: "skills/theirs/SKILL.md", computedHash: hash(".claude/skills/theirs/SKILL.md") },
+  } }));
+'
+check() {
+  expected=$1
+  shift
+  if out=$(node "$here/scripts/check-skills-lock.mjs" --root "$other/repo" --source me/skills "$@"); then status=0; else status=$?; fi
+  [ "$status" = "$expected" ] || { echo "self-test: exit $status, expected $expected, for: $*" >&2; echo "$out" >&2; exit 1; }
+  printf '%s\n' "$out"
+}
+check 0 | grep -q "theirs" && { echo "self-test: the default check read the other source" >&2; exit 1; }
+check 0 --other-sources report | grep -q "^ok   theirs" || { echo "self-test: the copy of the other source is not ok" >&2; exit 1; }
+printf 'theirs, edited\n' >.claude/skills/theirs/SKILL.md
+check 0 --other-sources report | grep -q "^warn theirs: hash" || { echo "self-test: no warning for an edited copy" >&2; exit 1; }
+check 1 --other-sources fail >/dev/null
+up="--upstream $other/up-mine"
+# shellcheck disable=SC2086
+check 0 $up --other-sources report --upstream-other "them/skills=$other/up-theirs" | grep -q "^warn theirs: theirs is out of date" ||
+  { echo "self-test: no warning for an upstream change of the other source" >&2; exit 1; }
+# shellcheck disable=SC2086
+check 1 $up --other-sources fail --upstream-other "them/skills=$other/up-theirs" >/dev/null
+# shellcheck disable=SC2086
+check 0 $up --other-sources report | grep -q "^warn theirs: there is no checkout" ||
+  { echo "self-test: no warning for a missing checkout" >&2; exit 1; }
+echo "ok   lock entries of other sources: off, report and fail"

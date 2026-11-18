@@ -13,6 +13,12 @@ inputs:
   upstream:
     description: Compare the lock with the main branch of the source repository instead. Needs github.com.
     default: "false"
+  other-sources:
+    description: >-
+      Also check the lock entries of other sources. "report" prints a warning for each
+      difference and does not fail. "fail" fails the check. "off" skips them. With
+      upstream, the action clones the skill folders of each other GitHub source.
+    default: "off"
 runs:
   using: composite
   steps:
@@ -23,11 +29,13 @@ runs:
         ALLOW: ${{ inputs.allow }}
         CLAUDE_LINKS: ${{ inputs.claude-links }}
         UPSTREAM: ${{ inputs.upstream }}
+        OTHER_SOURCES: ${{ inputs.other-sources }}
       run: |
         args=()
         [ -n "$SOURCE" ] && args+=(--source "$SOURCE")
         for name in $ALLOW; do args+=(--allow "$name"); done
         [ "$CLAUDE_LINKS" = "true" ] || args+=(--no-claude-links)
+        args+=(--other-sources "$OTHER_SOURCES")
         if [ "$UPSTREAM" = "true" ]; then
           if [ -z "$SOURCE" ]; then
             echo "::error::The upstream check needs a source repository."
@@ -39,6 +47,13 @@ runs:
             echo "::error::Cannot clone https://github.com/$SOURCE.git. Set the source input to the source that skills-lock.json records."
             exit 1
           fi
-          args+=(--upstream "$dir")
+          args+=(--upstream "$dir" --fetch-other)
         fi
-        node "$GITHUB_ACTION_PATH/scripts/check-skills-lock.mjs" --root "$GITHUB_WORKSPACE" "${args[@]}"
+        # Without the code block, Markdown joins the lines of the job summary.
+        status=0
+        echo '```text' >>"$GITHUB_STEP_SUMMARY"
+        node "$GITHUB_ACTION_PATH/scripts/check-skills-lock.mjs" --root "$GITHUB_WORKSPACE" "${args[@]}" |
+          tee -a "$GITHUB_STEP_SUMMARY" || status=$?
+        echo '```' >>"$GITHUB_STEP_SUMMARY"
+        exit "$status"
+
