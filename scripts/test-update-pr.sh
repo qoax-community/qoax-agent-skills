@@ -106,7 +106,7 @@ jobs:
 EOF
 git_q add -A
 git_q commit -q -m "chore: add the skills"
-git init -q --bare "$work/origin.git"
+git_q init -q --bare "$work/origin.git"
 git remote add origin "$work/origin.git"
 git push -q origin main
 lock_a=$(cat skills-lock.json)
