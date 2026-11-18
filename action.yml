@@ -1,5 +1,5 @@
 name: Check agent skills
-description: Check the vendored agent skills in .agents/skills against skills-lock.json. The default check runs offline and needs no token.
+description: Check the vendored agent skills in .agents/skills against skills-lock.json, or update them in a pull request. The default check runs offline and needs no token.
 inputs:
   source:
     description: Check only lock entries from this source. The check fails when no lock entry has this source. Set it to an empty string to check every entry.
@@ -19,10 +19,26 @@ inputs:
       difference and does not fail. "fail" fails the check. "off" skips them. With
       upstream, the action clones the skill folders of each other GitHub source.
     default: "off"
+  update:
+    description: >-
+      Update the skills of the source to its main branch, and open or refresh one pull
+      request on the branch agent-skills/update. Do not combine it with upstream.
+    default: "false"
+  bump-pin:
+    description: >-
+      With update, also move the commit pin of this action in .github/workflows to its
+      latest release. The token then needs workflows write, so GITHUB_TOKEN cannot do it.
+    default: "false"
+  token:
+    description: >-
+      With update, the token for the push and the pull request. A pull request from
+      GITHUB_TOKEN starts no workflow run until a person approves it.
+    default: ${{ github.token }}
 runs:
   using: composite
   steps:
     - name: Check agent skills against skills-lock.json
+      if: inputs.update != 'true'
       shell: bash
       env:
         SOURCE: ${{ inputs.source }}
@@ -57,3 +73,21 @@ runs:
         echo '```' >>"$GITHUB_STEP_SUMMARY"
         exit "$status"
 
+    - name: Update agent skills in a pull request
+      if: inputs.update == 'true'
+      shell: bash
+      working-directory: ${{ github.workspace }}
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        SOURCE: ${{ inputs.source }}
+        UPSTREAM: ${{ inputs.upstream }}
+        BUMP_PIN: ${{ inputs.bump-pin }}
+        CHECKS_NEED_APPROVAL: ${{ inputs.token == github.token }}
+      run: |
+        if [ "$UPSTREAM" = "true" ] || [ -z "$SOURCE" ]; then
+          echo "::error::The update needs a source repository and does not work with upstream."
+          exit 1
+        fi
+        args=(--repo "$GITHUB_REPOSITORY" --source "$SOURCE")
+        [ "$BUMP_PIN" = "true" ] && args+=(--bump-pin)
+        bash "$GITHUB_ACTION_PATH/scripts/update-pr.sh" "${args[@]}"

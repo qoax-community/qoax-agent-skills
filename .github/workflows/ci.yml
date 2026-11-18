@@ -25,3 +25,7 @@ jobs:
         run: sh scripts/self-test.sh
         env:
           DISABLE_TELEMETRY: "1"
+      - name: Update a scratch repository and open a pull request with a fake gh
+        run: bash scripts/test-update-pr.sh
+        env:
+          DISABLE_TELEMETRY: "1"
