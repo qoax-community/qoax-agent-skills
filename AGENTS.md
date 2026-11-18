@@ -9,5 +9,6 @@
 - Do not add a `version` to the plugin manifests, so that users get each new
   commit.
 - Before you open a pull request, run `node scripts/check-repo.mjs`,
-  `node scripts/sync-upstream.mjs verify` and `sh scripts/self-test.sh`.
+  `node scripts/sync-upstream.mjs verify`, `sh scripts/self-test.sh` and
+  `bash scripts/test-update-pr.sh`.
 - Run `sh scripts/setup-hooks.sh` once after a clone.
