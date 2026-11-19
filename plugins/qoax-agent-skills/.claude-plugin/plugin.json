@@ -1,6 +1,6 @@
 {
   "name": "qoax-agent-skills",
-  "description": "Shared Qoax agent skills: fill the organisation pull request and issue templates, question a plan before you build it, and write code comments.",
+  "description": "Shared Qoax agent skills: fill the organisation pull request and issue templates, question a plan before you build it, write code comments, and file, review, babysit and finish pull requests (from t3dotgg/tstack).",
   "author": { "name": "Qoax Community" },
   "repository": "https://github.com/qoax-community/qoax-agent-skills",
   "license": "MIT"
