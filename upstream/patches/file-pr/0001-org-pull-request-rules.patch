@@ -1,0 +1,31 @@
+diff --git a/SKILL.md b/SKILL.md
+index c2dea18..8880db3 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -21,6 +21,11 @@ GOOD
+ 
+ > ✅ perf(server): cut websocket frame size by 70%+ with gzipping
+ 
++Local change: if the repository or its organization has a pull request
++template, fill every section of it and keep its headings. In qoax-community
++repositories, the `github-templates` skill tells how. Put the problem and the
++solution in its Description section.
++
+ Open the description with a simple explanation of the problem based on the
+ user's original prompt, then briefly explain the solution. Do not lead with an
+ implementation inventory:
+@@ -33,10 +38,10 @@ GOOD
+ 
+ > ✅ My "new worktree" default was ignored when starting new threads on existing worktrees. Super unintuitive. Now your preferences always apply.
+ 
+-End the description with the public model name and harness that made the
+-changes, for example `Created with <model> in <harness>.` Include subagent
+-models that wrote part of the change. Use the model name the harness reports.
+-If model identity is unavailable, name the harness without guessing a model.
++Local change: do not add a model, harness or AI attribution line to the
++description. Put review records, such as the ones from `council` and
++`sol-loop`, in the Validation section of the template, or at the end of the
++description when the repository has no template.
+ 
+ Before submission, check the title, description, quotes, and attachments for
+ secrets and private details.

@@ -1,0 +1,18 @@
+diff --git a/SKILL.md b/SKILL.md
+index bc6d8c3..26a824a 100644
+--- a/SKILL.md
++++ b/SKILL.md
+@@ -36,10 +36,11 @@ Count each full review pass as one round.
+ A fresh review after fixes starts a new round.
+ 
+ If the work ends in a pull request, put the results in the PR description.
+-Put this section before the model and harness line at the end:
++Put this section in the Validation section of the PR template, or at the end
++of the description when the repository has no template (local change):
+ 
+ ```markdown
+-## Council review
++#### Council review
+ 
+ Rounds: 2
+ 

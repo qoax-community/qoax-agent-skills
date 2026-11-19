@@ -1,6 +1,9 @@
 {
   "name": "qoax",
-  "owner": { "name": "Qoax Community", "url": "https://github.com/qoax-community" },
+  "owner": {
+    "name": "Qoax Community",
+    "url": "https://github.com/qoax-community"
+  },
   "description": "Shared agent skills for Qoax repositories.",
   "plugins": [
     {
@@ -11,7 +14,7 @@
     {
       "name": "qoax-agent-skills",
       "source": "./plugins/qoax-agent-skills",
-      "description": "Qoax organisation templates, plan questioning and code comment rules."
+      "description": "Qoax organisation templates, plan questioning, code comment rules and pull request workflow skills from t3dotgg/tstack."
     },
     {
       "name": "modern-web-guidance",

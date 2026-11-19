@@ -108,5 +108,135 @@
       "0001-notice.patch"
     ],
     "check": "report"
+  },
+  "babysit-pr": {
+    "plugin": "qoax-agent-skills",
+    "repo": "t3dotgg/tstack",
+    "path": "skills/babysit-pr",
+    "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+    "tree": "7b4e3e4e0f8b53a1fd049d6a27d5f998395ace52",
+    "files": [
+      "SKILL.md",
+      "scripts/pr-wait"
+    ],
+    "licence": "/LICENSE",
+    "patches": [],
+    "check": "report"
+  },
+  "council": {
+    "plugin": "qoax-agent-skills",
+    "repo": "t3dotgg/tstack",
+    "path": "skills/council",
+    "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+    "tree": "797e3657df1f2bf919211fce88862dafd3b5eabb",
+    "files": [
+      "SKILL.md"
+    ],
+    "licence": "/LICENSE",
+    "patches": [
+      "0001-org-pull-request-rules.patch"
+    ],
+    "check": "report"
+  },
+  "file-pr": {
+    "plugin": "qoax-agent-skills",
+    "repo": "t3dotgg/tstack",
+    "path": "skills/file-pr",
+    "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+    "tree": "04b5dff2274053132e131912257c82c4d8141dd0",
+    "files": [
+      "SKILL.md"
+    ],
+    "licence": "/LICENSE",
+    "patches": [
+      "0001-org-pull-request-rules.patch"
+    ],
+    "check": "report"
+  },
+  "full-send": {
+    "plugin": "qoax-agent-skills",
+    "repo": "t3dotgg/tstack",
+    "path": "skills/full-send",
+    "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+    "tree": "de21961fbb3f6892ab4ea1fb2b58e0f95debec87",
+    "files": [
+      "SKILL.md",
+      "agents/openai.yaml"
+    ],
+    "licence": "/LICENSE",
+    "patches": [],
+    "check": "report"
+  },
+  "full-stop": {
+    "plugin": "qoax-agent-skills",
+    "repo": "t3dotgg/tstack",
+    "path": "skills/full-stop",
+    "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+    "tree": "16f14dba1ab91a1f7fbcce387b6b96cdd15fc4f5",
+    "files": [
+      "SKILL.md",
+      "agents/openai.yaml"
+    ],
+    "licence": "/LICENSE",
+    "patches": [],
+    "check": "report"
+  },
+  "leaving-pr-comments": {
+    "plugin": "qoax-agent-skills",
+    "repo": "t3dotgg/tstack",
+    "path": "skills/leaving-pr-comments",
+    "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+    "tree": "3905d758fb70b4e660038456f86ac02343a3dedf",
+    "files": [
+      "SKILL.md",
+      "agents/openai.yaml"
+    ],
+    "licence": "/LICENSE",
+    "patches": [
+      "0001-no-agent-note.patch"
+    ],
+    "check": "report"
+  },
+  "modernize": {
+    "plugin": "qoax-agent-skills",
+    "repo": "t3dotgg/tstack",
+    "path": "skills/modernize",
+    "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+    "tree": "149f54a0835d2da770b564eb8624f1e3618a33a7",
+    "files": [
+      "SKILL.md",
+      "agents/openai.yaml"
+    ],
+    "licence": "/LICENSE",
+    "patches": [],
+    "check": "report"
+  },
+  "sol-loop": {
+    "plugin": "qoax-agent-skills",
+    "repo": "t3dotgg/tstack",
+    "path": "skills/sol-loop",
+    "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+    "tree": "9d2b1c1b00bf54e1b4e6e6243aec6d39037ce624",
+    "files": [
+      "SKILL.md"
+    ],
+    "licence": "/LICENSE",
+    "patches": [
+      "0001-org-pull-request-rules.patch"
+    ],
+    "check": "report"
+  },
+  "takeover": {
+    "plugin": "qoax-agent-skills",
+    "repo": "t3dotgg/tstack",
+    "path": "skills/takeover",
+    "commit": "11e37a74d0a6868c121cd0910ab2b3bd9873b92a",
+    "tree": "54cfa8d25b9a356cc826daa964979e8cdce377ad",
+    "files": [
+      "SKILL.md"
+    ],
+    "licence": "/LICENSE",
+    "patches": [],
+    "check": "report"
   }
 }
