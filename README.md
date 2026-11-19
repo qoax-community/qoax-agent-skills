@@ -16,6 +16,15 @@ this repository.
 | `writing-code-comments` | `qoax-agent-skills` | `posthog/posthog`, `.agents/skills/writing-code-comments` | `f18803e` | MIT (Expat), PostHog Inc. |
 | `modern-web-guidance` | `modern-web-guidance` | `GoogleChrome/modern-web-guidance`, `skills/modern-web-guidance` | `64a6d70` | Apache-2.0 and CC BY 4.0, Google Chrome |
 | `chrome-extensions` | `chrome-extensions` | `GoogleChrome/modern-web-guidance`, `skills/chrome-extensions` | `64a6d70` | Apache-2.0 and CC BY 4.0, Google Chrome |
+| `babysit-pr` | `qoax-agent-skills` | `t3dotgg/tstack`, `skills/babysit-pr` | `11e37a7` | MIT, Theo Browne |
+| `council` | `qoax-agent-skills` | `t3dotgg/tstack`, `skills/council` | `11e37a7` | MIT, Theo Browne |
+| `file-pr` | `qoax-agent-skills` | `t3dotgg/tstack`, `skills/file-pr` | `11e37a7` | MIT, Theo Browne |
+| `full-send` | `qoax-agent-skills` | `t3dotgg/tstack`, `skills/full-send` | `11e37a7` | MIT, Theo Browne |
+| `full-stop` | `qoax-agent-skills` | `t3dotgg/tstack`, `skills/full-stop` | `11e37a7` | MIT, Theo Browne |
+| `leaving-pr-comments` | `qoax-agent-skills` | `t3dotgg/tstack`, `skills/leaving-pr-comments` | `11e37a7` | MIT, Theo Browne |
+| `modernize` | `qoax-agent-skills` | `t3dotgg/tstack`, `skills/modernize` | `11e37a7` | MIT, Theo Browne |
+| `sol-loop` | `qoax-agent-skills` | `t3dotgg/tstack`, `skills/sol-loop` | `11e37a7` | MIT, Theo Browne |
+| `takeover` | `qoax-agent-skills` | `t3dotgg/tstack`, `skills/takeover` | `11e37a7` | MIT, Theo Browne |
 | `github-templates` | `qoax-agent-skills` | this repository | | MIT, Qoax Community |
 
 `upstream/sources.json` records the upstream commit of each third-party
@@ -36,6 +45,10 @@ specification.
 
 The `modern-web-guidance` and `chrome-extensions` plugins are unofficial
 copies. Google does not support them.
+
+The `qoax-agent-skills` plugin also has copies of the pull request skills
+from [t3dotgg/tstack](https://github.com/t3dotgg/tstack). The "Pull request
+skills" section below tells what they need.
 
 Local changes to third-party skills:
 
@@ -71,10 +84,22 @@ Local changes to third-party skills:
   `upstream/patches/modern-web-guidance/`.
 - `chrome-extensions`: the upstream files have no change. The patch in
   `upstream/patches/chrome-extensions/` adds only `NOTICE`.
-- `grill-me`, `grilling`, `writing-code-comments`, `modern-web-guidance` and
-  `chrome-extensions`: the upstream skill folders have no `LICENSE`. The
-  `LICENSE` in each folder here is a copy of the file at the root of the
-  upstream repository.
+- `file-pr`: the agent fills the pull request template of the repository and
+  adds no model, harness or AI attribution line to the description. Upstream
+  ends each description with `Created with <model> in <harness>.`, and the
+  `github-templates` skill does not allow that.
+- `sol-loop` and `council`: the agent puts the review record in the
+  Validation section of the pull request template, not above a model line.
+  The `council` table has a `####` heading, so it fits in that section. The
+  patches of the three skills are in `upstream/patches/<name>/`.
+- `leaving-pr-comments`: the agent adds no note, signature or other line that
+  names a model, a harness or an agent to a comment. Upstream starts each
+  comment with a note that names the model and the user. The patch is in
+  `upstream/patches/leaving-pr-comments/`.
+- `grill-me`, `grilling`, `writing-code-comments`, `modern-web-guidance`,
+  `chrome-extensions` and the skills from `t3dotgg/tstack`: the upstream
+  skill folders have no `LICENSE`. The `LICENSE` in each folder here is a
+  copy of the file at the root of the upstream repository.
 
 ## Add the skills to a repository
 
@@ -197,6 +222,37 @@ Then do these steps, in addition to the steps above:
    For a browser extension, also add `"chrome-extensions@qoax": false`. If
    the repository commits other skills from this repository, also turn off
    their plugins. The "Claude Code" section below gives the names.
+
+### Pull request skills
+
+Nine skills from `t3dotgg/tstack` are for pull request work. With the skills
+CLI, add them only to a repository that wants them. Some skills call others,
+so add all nine together:
+
+```sh
+DISABLE_TELEMETRY=1 npx skills@1.7.3 add qoax-community/qoax-agent-skills \
+  --skill babysit-pr council file-pr full-send full-stop leaving-pr-comments \
+  modernize sol-loop takeover -a claude-code codex gemini-cli -y
+```
+
+Know these points before you add them:
+
+- The skills need an authenticated `gh`. `babysit-pr` runs
+  `scripts/pr-wait` with `python3`. The script reads the pull request with
+  `gh` and keeps its state in `~/.local/state/pr-wait/`.
+- `council` needs models of three providers, and `sol-loop` needs GPT Sol.
+  T3 Code starts them. A harness that cannot start them reports a blocker.
+  `full-send` and `full-stop` use `sol-loop`, so they stop there too.
+- `full-send` works only when a person says "full send". It then merges the
+  pull request when its merge gate passes: green checks, finished review
+  bots, a current branch and its own proof. It also uses test methods that a
+  project file says to ask about first, for example computer use.
+  `full-stop` does the same work, but it never merges.
+- `leaving-pr-comments` starts on each GitHub comment that an agent writes.
+  It checks the comment for secrets and private details, and keeps it short
+  and direct.
+- The Claude Code plugin `qoax-agent-skills@qoax` has the nine skills too. A
+  person who installs the plugin gets all of them.
 
 ### Symbolic links
 
