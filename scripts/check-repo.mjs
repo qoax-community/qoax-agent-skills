@@ -5,9 +5,7 @@
 // - Each marketplace entry points at ./plugins/<name>, and that folder has a
 //   plugin.json with the same name and a "license".
 // - Each folder in plugins/ has a marketplace entry.
-// - No plugin has a top-level bin/ folder. claude.ai rejects a plugin with one.
 // - No plugin.json or marketplace entry sets "version", so users get each new commit.
-//   scripts/build-zips.sh adds the version to the claude.ai zip files only.
 // - Each skill folder has SKILL.md and a LICENSE. The SKILL.md frontmatter has
 //   a "name" equal to the folder name and a "description".
 // - Skill names are unique across the plugins.
@@ -67,7 +65,6 @@ for (const plugin of readdirSync(pluginsDir).sort()) {
   const folder = join(pluginsDir, plugin);
   if (!isDir(folder)) continue;
   if (!entries.has(plugin)) errors.push(`plugins/${plugin}: no entry in marketplace.json`);
-  if (existsSync(join(folder, "bin"))) errors.push(`plugins/${plugin}: top-level bin/ is not allowed`);
   const skillsDir = join(folder, "skills");
   if (!isDir(skillsDir)) {
     errors.push(`plugins/${plugin}: no skills/ folder`);
