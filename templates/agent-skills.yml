@@ -5,6 +5,12 @@
 # commit of a release tag, and put the tag in a comment:
 #   uses: qoax-community/qoax-agent-skills@<commit> # vX.Y.Z
 # Get the commit with: git rev-parse 'vX.Y.Z^{commit}'
+# When the skills bot is installed, its update pull requests move this pin.
+#
+# "Skills are current" fails while main of qoax-agent-skills has a newer
+# skill than skills-lock.json. Merge the update pull request of the bot, or
+# update by hand. It also reports skills from other sources that are behind
+# their upstream. The report does not fail the job.
 name: Agent skills
 
 on:
@@ -24,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
       - uses: qoax-community/qoax-agent-skills@v1.0.0
 
   upstream:
@@ -32,6 +40,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
       - uses: qoax-community/qoax-agent-skills@v1.0.0
         with:
           upstream: "true"
+          other-sources: report

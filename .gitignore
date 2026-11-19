@@ -1,1 +1,4 @@
 /dist/
+
+# The pinned skills CLI installs outside the repository, but never commit it.
+node_modules/

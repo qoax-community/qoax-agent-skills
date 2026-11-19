@@ -144,9 +144,11 @@ Then:
 
    Then write `uses: qoax-community/qoax-agent-skills@<commit> # vX.Y.Z` in
    both jobs.
-5. If `.github/dependabot.yml` has an `allow` list for `github-actions`, add
-   this entry to it. Without the entry, Dependabot does not bump the pin of
-   the action:
+5. Install the skills bot on the repository. The "Update pull requests"
+   section tells how. The bot moves the skills and the pin of the action.
+   Without the bot, and if `.github/dependabot.yml` has an `allow` list for
+   `github-actions`, add this entry to it. Without the entry, Dependabot
+   does not bump the pin of the action:
 
    ```yaml
    - dependency-name: "qoax-community/qoax-agent-skills"
@@ -306,13 +308,33 @@ git checkout -- .agents/skills
 
 ## Update a repository
 
+The skills bot opens the update pull request. The "Update pull requests"
+section below tells how it works. To update by hand, run this command in a
+clone of this repository. `PATH` is the root of a clean clone of the
+consumer repository:
+
+```sh
+sh scripts/update-skills.sh --root PATH --bump-pin
+```
+
+The script updates only the skills from this repository, also in a
+repository that has skills from other sources. It installs the skills CLI from
+`scripts/skills-cli/package-lock.json` into a cache folder, so an `.npmrc` in
+the consumer cannot change the package. It runs the CLI with a scratch home
+directory, so the computer needs no `~/.claude` directory. Then it makes sure
+that only the skills, their links, `skills-lock.json` and the pin changed, and
+runs the lock check. Commit the changes.
+
+The plain skills CLI command also works:
+
 ```sh
 DISABLE_TELEMETRY=1 npx skills@1.7.3 update -p -y
 ```
 
 Run it on a computer that has a `~/.claude` directory. If the home directory
 has no agent directory, the CLI writes to every agent that it knows, for
-example `agent/skills`. The CLI takes the skills from the main branch of this
+example `agent/skills`. Without skill names, it also updates the skills of
+other sources. The CLI takes the skills from the main branch of this
 repository. The lock records no commit.
 
 The `update` command does not add a skill that is new in this repository. Use
@@ -321,6 +343,146 @@ The `update` command does not add a skill that is new in this repository. Use
 
 The "Skills are current" job of `agent-skills.yml` runs once a week. It fails
 when the main branch of this repository has a newer skill than the lock.
+
+## Update pull requests
+
+The "Update consumers" workflow opens one pull request in each consumer
+repository, as Dependabot does for a dependency. A consumer is a repository
+where the `qoax-skills-bot` GitHub App is installed and whose
+`skills-lock.json` has a skill from this repository. The workflow runs after
+each successful run of the "Release" workflow, each Monday, and by hand.
+
+In each consumer, the pull request does two things:
+
+- It updates the skills from this repository to the main branch, with
+  `scripts/update-skills.sh`. It does not change the skills of other sources.
+- It moves the pin of this action in `.github/workflows` to the latest
+  release. This is the bump that Dependabot opens as its own pull request,
+  so the bot closes that Dependabot pull request.
+
+The branch is `agent-skills/update`. Each run makes it again from the default
+branch, with one `ci:` commit for the pin and one `chore:` commit for the
+skills. The App is the author. When nothing changed and the pull request is
+still open, the bot closes it. When a person pushes a commit to the branch,
+or amends a commit of the bot, the bot does not change the branch while the
+pull request is open. After a close without a merge, the bot makes the
+branch again.
+
+The App token makes the pull request, so the checks of the consumer run as
+they do for a person. A pull request from `GITHUB_TOKEN` starts no workflow
+run until a person approves it. `GITHUB_TOKEN` also cannot change a workflow
+file, so it cannot move the pin.
+
+The workflow has two jobs, so that no job has both the skills CLI and a token
+that can write:
+
+1. "Prepare" clones each consumer with an App token that can only read. Then
+   it revokes the token and runs `scripts/update-pr.sh --prepare`. The result
+   for each consumer is a patch and the texts of the pull request.
+2. "Publish" gets an App token that can write. `scripts/publish-pr.sh`
+   applies each patch to a new clone and checks each path again. Only the
+   skills of this repository, their links, `skills-lock.json` and the pin
+   lines may change. Then it pushes the branch and opens the pull request.
+
+The token goes to git only in the environment of each git command, not into
+`.git/config` and not onto the command line. The workflow starts on
+`workflow_run`, so GitHub always runs the workflow file of `main`. A tag on a
+commit that nobody reviewed thus cannot run a changed copy with the App key.
+
+### Set up the bot
+
+Do these steps one time. Steps 1 to 3 need an owner of qoax-community.
+
+1. In the qoax-community organisation settings, make a GitHub App:
+   - Name: `qoax-skills-bot`. Homepage URL: this repository.
+   - Webhook: off.
+   - Repository permissions: Contents, Pull requests and Workflows, each
+     "Read and write". Metadata stays "Read-only".
+   - Where the App can be installed: "Any account". The personal account
+     angel-penchev has consumers too, and a private App can only go on the
+     account that owns it.
+2. Make a private key for the App. Write down the Client ID.
+3. Install the App on qoax-community and on angel-penchev. Select only the
+   consumer repositories.
+4. In this repository, make the environment `skills-bot`:
+   - Deployment branches and tags: "Selected branches and tags", with the
+     branch `main` only.
+   - Environment secret `SKILLS_BOT_PRIVATE_KEY`: the private key.
+   - Environment variable `SKILLS_BOT_CLIENT_ID`: the Client ID.
+5. Add a ruleset for `main` that requires a pull request. The environment
+   trusts each workflow file on `main`. Without the ruleset, each person with
+   write access can push a changed workflow to `main` and use the key.
+6. Run "Update consumers" by hand with "dry-run" on. The log shows each pull
+   request that the bot would open. Then run it again with "dry-run" off.
+
+GitHub Free does not give organisation secrets to private repositories. Thus
+the key is in this repository only, not in each consumer.
+
+To add a consumer, install the App on it. To stop the bot in one
+repository, remove the repository from the installation. The matrix of the
+workflow lists the owners. When a consumer has a new owner, add the owner
+there and install the App on it.
+
+### Without the App
+
+A repository can run the update itself with its own `GITHUB_TOKEN`. Add this
+job to its `agent-skills.yml`:
+
+```yaml
+  update:
+    name: Update the skills
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: qoax-community/qoax-agent-skills@<commit> # vX.Y.Z
+        with:
+          update: "true"
+```
+
+Then:
+
+1. In Settings > Actions > General of the repository, turn on "Allow GitHub
+   Actions to create and approve pull requests".
+2. On each update pull request, select "Approve workflows to run" in the
+   merge box.
+3. Keep the Dependabot bump of this action. Leave `bump-pin` off, because
+   `GITHUB_TOKEN` cannot change a workflow file.
+
+In this mode, the skills CLI runs in the same job as the token. The script
+removes the token from the environment of the CLI, but a process of the same
+job can still read it. The token can write only to this one repository.
+
+## Skills from other sources
+
+A repository can also add skills straight from another source, for example
+`shadcn` from `shadcn/ui`. The default check reads only the lock entries of
+this repository. With the `other-sources` input, the action also checks the
+other entries:
+
+- `report`: each finding is a warning in the job and in the job summary.
+  The job does not fail. The template uses it in "Skills are current".
+- `fail`: each finding fails the job.
+- `off`: the action does not read them. This is the default.
+
+In "Skills match the lock", the action compares each copy in the repository
+with the lock. It reads `.agents/skills/<name>`, or a real folder
+`.claude/skills/<name>`. It does not check a skill that the repository does
+not commit, for example one that a bootstrap step installs. In "Skills are
+current", the action clones the skill folders of each other GitHub source,
+with no history, and compares them with the lock.
+
+The update bot does not change these skills. To update one, read the
+upstream change, then run:
+
+```sh
+DISABLE_TELEMETRY=1 npx skills@1.7.3 update -p -y NAME
+```
 
 ## Change a skill
 
@@ -339,9 +501,11 @@ when the main branch of this repository has a newer skill than the lock.
      file name to `"patches"`. Then run `pull` again.
   4. Run `node scripts/sync-upstream.mjs verify`. It builds each skill again
      at its pinned commit and compares it with `plugins/`.
-- Before a pull request, run `node scripts/check-repo.mjs` and
-  `sh scripts/self-test.sh`. The self-test installs every skill with the
-  skills CLI and compares the hashes.
+- Before a pull request, run `node scripts/check-repo.mjs`,
+  `sh scripts/self-test.sh` and `bash scripts/test-update-pr.sh`. The
+  self-test installs every skill with the skills CLI and compares the
+  hashes. The update test runs the bot on a scratch repository with a fake
+  `gh`. It needs bash 4 or later and `jq`.
 - After the merge, make a release as "Releases" tells.
 
 ### Update modern-web-guidance
@@ -421,8 +585,9 @@ version starts with `2026_11_10`, so update before 2027-01-09.
    and the npm integrity in "Local changes". In the 60-day paragraph above,
    change the version and the two dates.
 8. Open a pull request. After the merge, make a release.
-9. The "Skills are current" job then fails in each web repository. Update
-   each one as "Update a repository" tells. If Dependabot opens a pull
+9. After the release, "Update consumers" opens an update pull request in
+   each web repository, with the skills and the new pin. Without the bot,
+   update each one as "Update a repository" tells. If Dependabot opens a pull
    request that moves the pin of this action to the new release, put that
    change in the same pull request. Then close the Dependabot pull request.
 
