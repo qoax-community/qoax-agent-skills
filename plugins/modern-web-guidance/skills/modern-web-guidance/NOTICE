@@ -43,16 +43,17 @@ Qoax Community changed SKILL.md:
 - The offline retry is
   "DISABLE_TELEMETRY=1 npx --offline -y modern-web-guidance@1.0.1" in place
   of "npx --offline".
-- The patch removes the advice to prefer pnpx. The allowlist example shows
-  the full command with DISABLE_TELEMETRY=1.
+- Qoax Community removed the advice to prefer pnpx. The allowlist example
+  shows the full command with DISABLE_TELEMETRY=1.
 - A "Version (local change)" item tells the agent to use version 1.0.1, also
   where a guide shows @latest. The item also tells the agent to keep
   telemetry off. It forbids the CLI commands that install, update or remove
   skills, or write .mwgrc.
-- The patch removes Step 4 "Disclose Skill Usage". A "Reply (local change)"
-  item tells the agent to name a guide id only where it explains a choice.
+- Qoax Community removed Step 4 "Disclose Skill Usage". A "Reply (local
+  change)" item tells the agent to name a guide id only where it explains a
+  choice.
 - A line after the frontmatter says that Qoax Community changed the file.
 
-Qoax Community also added this NOTICE file and the LICENSE file. The patch is
-in upstream/patches/modern-web-guidance/ in
+Qoax Community also added this NOTICE file and the LICENSE file. The script
+that makes the changes is upstream/transforms/modern-web-guidance.mjs in
 https://github.com/qoax-community/qoax-agent-skills

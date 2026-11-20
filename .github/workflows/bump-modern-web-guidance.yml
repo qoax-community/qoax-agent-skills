@@ -1,0 +1,119 @@
+# Opens one pull request that moves modern-web-guidance and chrome-extensions
+# to a newer release of GoogleChrome/modern-web-guidance. A person reads the
+# SKILL.md diff and the npm report, then merges. "Release after a bump" then
+# makes the next patch release.
+#
+# Two jobs, so that the job with the App key runs no npm command:
+# - prepare: no token that can write. scripts/bump-mwg.mjs picks the release
+#   after the cooldown, runs the static gates on the npm package without
+#   running it, and makes the change. Then the checks of this repository run.
+#   The job keeps the change as a patch.
+# - publish: an App token for this repository only. publish-pr.sh applies the
+#   patch to a new checkout of main, checks each path, then pushes the branch
+#   and opens the pull request.
+name: Bump modern-web-guidance
+
+on:
+  schedule:
+    - cron: "53 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Bump to this npm version, X.Y.Z. Leave it empty for the newest after the cooldown.
+        default: ""
+      force:
+        description: Bump also when the pin is less than 28 days old.
+        type: boolean
+        default: false
+      dry-run:
+        description: Make the change, but push nothing and open no pull request.
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bump-modern-web-guidance
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare the bump
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Bump and check
+        env:
+          VERSION: ${{ inputs.version }}
+          FORCE: ${{ inputs.force }}
+          OUT: ${{ runner.temp }}/bump
+        run: |
+          mkdir -p "$OUT"
+          git rev-parse HEAD >"$OUT/base"
+          : >"$OUT/patch"
+          args=(--out "$OUT")
+          [ -n "$VERSION" ] && args+=(--version "$VERSION")
+          [ "$FORCE" = "true" ] && args+=(--force)
+          echo '```text' >>"$GITHUB_STEP_SUMMARY"
+          status=0
+          node scripts/bump-mwg.mjs "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY" || status=$?
+          echo '```' >>"$GITHUB_STEP_SUMMARY"
+          [ "$status" = 0 ] || exit "$status"
+          if [ -n "$(git status --porcelain --untracked-files=all)" ]; then
+            node scripts/check-repo.mjs
+            node scripts/sync-upstream.mjs verify
+            sh scripts/self-test.sh
+            git add -A
+            git diff --cached --binary >"$OUT/patch"
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: bump
+          path: ${{ runner.temp }}/bump
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Open the pull request
+    needs: prepare
+    runs-on: ubuntu-latest
+    environment: skills-bot
+    steps:
+      # main, not the commit of the trigger: publish-pr.sh stops when main
+      # moved after prepare, and the next run makes the bump again.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: bump
+          path: ${{ runner.temp }}/bump
+      - id: token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.SKILLS_BOT_CLIENT_ID }}
+          private-key: ${{ secrets.SKILLS_BOT_PRIVATE_KEY }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Open or refresh the pull request
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          APP_SLUG: ${{ steps.token.outputs.app-slug }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          BOT_NAME="$APP_SLUG[bot]"
+          BOT_EMAIL="$(gh api "users/$APP_SLUG%5Bbot%5D" --jq .id)+$APP_SLUG[bot]@users.noreply.github.com"
+          export BOT_NAME BOT_EMAIL
+          args=(--repo "$GITHUB_REPOSITORY" --in "$RUNNER_TEMP/bump" --branch upstream/modern-web-guidance
+            --allow plugins/modern-web-guidance/ --allow plugins/chrome-extensions/
+            --allow upstream/sources.json --allow README.md)
+          [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          bash scripts/publish-pr.sh "${args[@]}"
